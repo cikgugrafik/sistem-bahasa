@@ -15,7 +15,6 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700", "900"],
 });
 
-// Logo Moden
 const ModernLogo = ({ className = "" }: { className?: string }) => (
   <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-md shadow-blue-500/30 ${className}`}>
     <svg className="w-[55%] h-[55%] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,68 +23,72 @@ const ModernLogo = ({ className = "" }: { className?: string }) => (
   </div>
 );
 
-// Senarai Semua Indeks Untuk Carian Lokal
+// UPDATE: Semua muka surat telah ditambah 4 (+4 Offset) supaya selari dengan PDF sebenar
 const allPagesIndex = [
-  { title: "Kata Nama", page: 1, type: "Tajuk Utama" },
-  { title: "Kata Nama Am", page: 2, type: "Sub-tajuk" },
-  { title: "Kata Nama Khas", page: 4, type: "Sub-tajuk" },
-  { title: "Kata Ganti Nama Diri", page: 5, type: "Sub-tajuk" },
-  { title: "Kata Ganti Nama Diri Tunjuk", page: 6, type: "Sub-tajuk" },
-  { title: "Kata Kerja", page: 7, type: "Tajuk Utama" },
-  { title: "Kata Kerja Transitif", page: 8, type: "Sub-tajuk" },
-  { title: "Kata Kerja Tak Transitif", page: 10, type: "Sub-tajuk" },
-  { title: "Kata Adjektif", page: 11, type: "Tajuk Utama" },
-  { title: "Kata Adjektif Sifat", page: 13, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Perasaan", page: 14, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Ukuran", page: 15, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Warna", page: 16, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Jarak", page: 17, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Cara", page: 18, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Waktu", page: 19, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Bentuk", page: 20, type: "Sub-tajuk" },
-  { title: "Kata Adjektif Pancaindera", page: 21, type: "Sub-tajuk" },
-  { title: "Kata Tugas", page: 22, type: "Tajuk Utama" },
-  { title: "Kata Hubung", page: 23, type: "Sub-tajuk" },
-  { title: "Kata Pembenar", page: 26, type: "Sub-tajuk" },
-  { title: "Kata Nafi", page: 27, type: "Sub-tajuk" },
-  { title: "Kata Seru", page: 28, type: "Sub-tajuk" },
-  { title: "Kata Perintah", page: 29, type: "Sub-tajuk" },
-  { title: "Kata Bantu", page: 30, type: "Sub-tajuk" },
-  { title: "Kata Bilangan", page: 31, type: "Sub-tajuk" },
-  { title: "Kata Arah", page: 32, type: "Sub-tajuk" },
-  { title: "Kata Sendi Nama", page: 33, type: "Sub-tajuk" },
-  { title: "Kata Pemeri", page: 34, type: "Sub-tajuk" },
-  { title: "Kata Penguat", page: 35, type: "Sub-tajuk" },
-  { title: "Kata Adverba", page: 36, type: "Sub-tajuk" },
-  { title: "Kata Penegas", page: 37, type: "Sub-tajuk" },
-  { title: "Kata Pangkal Ayat", page: 38, type: "Sub-tajuk" },
-  { title: "Kata Ganda", page: 39, type: "Tajuk Utama" },
-  { title: "Kata Ganda Penuh", page: 41, type: "Sub-tajuk" },
-  { title: "Kata Ganda Separa", page: 42, type: "Sub-tajuk" },
-  { title: "Kata Ganda Berentak / Berirama", page: 43, type: "Sub-tajuk" },
-  { title: "Kata Berimbuhan", page: 44, type: "Tajuk Utama" },
-  { title: "Imbuhan Awalan", page: 46, type: "Sub-tajuk" },
-  { title: "Imbuhan Akhiran", page: 47, type: "Sub-tajuk" },
-  { title: "Imbuhan Apitan", page: 48, type: "Sub-tajuk" },
-  { title: "Imbuhan Sisipan", page: 49, type: "Sub-tajuk" },
-  { title: "Pembentukan Ayat", page: 50, type: "Tajuk Utama" },
-  { title: "Jenis Ayat", page: 52, type: "Sub-tajuk" },
-  { title: "Ragam Ayat (Aktif & Pasif)", page: 57, type: "Sub-tajuk" },
-  { title: "Susunan Ayat (Biasa & Songsang)", page: 60, type: "Sub-tajuk" },
-  { title: "Ayat Majmuk", page: 61, type: "Sub-tajuk" },
-  { title: "Cakap Ajuk dan Cakap Pindah", page: 62, type: "Sub-tajuk" },
-  { title: "Penanda Wacana", page: 63, type: "Sub-tajuk" },
-  { title: "Peribahasa", page: 64, type: "Tajuk Utama" },
-  { title: "Simpulan Bahasa", page: 66, type: "Sub-tajuk" },
-  { title: "Perumpamaan", page: 70, type: "Sub-tajuk" },
-  { title: "Pepatah", page: 77, type: "Sub-tajuk" },
-  { title: "Bidalan", page: 80, type: "Sub-tajuk" },
-  { title: "Kiasan / Bandingan Semacam", page: 85, type: "Sub-tajuk" },
-  { title: "Kata-kata Hikmat", page: 88, type: "Sub-tajuk" },
-  { title: "Penjodoh Bilangan", page: 89, type: "Tajuk Utama" },
-  { title: "Polisemi", page: 95, type: "Tajuk Utama" },
-  { title: "Sinonim", page: 100, type: "Tajuk Utama" },
-  { title: "Antonim", page: 104, type: "Tajuk Utama" },
+  { title: "Cover Depan", page: 1, type: "Pengenalan" },
+  { title: "Nota Hak Cipta", page: 2, type: "Pengenalan" },
+  { title: "Isi Kandungan (Bahagian 1)", page: 3, type: "Pengenalan" },
+  { title: "Isi Kandungan (Bahagian 2)", page: 4, type: "Pengenalan" },
+  { title: "Kata Nama", page: 5, type: "Tajuk Utama" },
+  { title: "Kata Nama Am", page: 6, type: "Sub-tajuk" },
+  { title: "Kata Nama Khas", page: 8, type: "Sub-tajuk" },
+  { title: "Kata Ganti Nama Diri", page: 9, type: "Sub-tajuk" },
+  { title: "Kata Ganti Nama Diri Tunjuk", page: 10, type: "Sub-tajuk" },
+  { title: "Kata Kerja", page: 11, type: "Tajuk Utama" },
+  { title: "Kata Kerja Transitif", page: 12, type: "Sub-tajuk" },
+  { title: "Kata Kerja Tak Transitif", page: 14, type: "Sub-tajuk" },
+  { title: "Kata Adjektif", page: 15, type: "Tajuk Utama" },
+  { title: "Kata Adjektif Sifat", page: 17, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Perasaan", page: 18, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Ukuran", page: 19, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Warna", page: 20, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Jarak", page: 21, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Cara", page: 22, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Waktu", page: 23, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Bentuk", page: 24, type: "Sub-tajuk" },
+  { title: "Kata Adjektif Pancaindera", page: 25, type: "Sub-tajuk" },
+  { title: "Kata Tugas", page: 26, type: "Tajuk Utama" },
+  { title: "Kata Hubung", page: 27, type: "Sub-tajuk" },
+  { title: "Kata Pembenar", page: 30, type: "Sub-tajuk" },
+  { title: "Kata Nafi", page: 31, type: "Sub-tajuk" },
+  { title: "Kata Seru", page: 32, type: "Sub-tajuk" },
+  { title: "Kata Perintah", page: 33, type: "Sub-tajuk" },
+  { title: "Kata Bantu", page: 34, type: "Sub-tajuk" },
+  { title: "Kata Bilangan", page: 35, type: "Sub-tajuk" },
+  { title: "Kata Arah", page: 36, type: "Sub-tajuk" },
+  { title: "Kata Sendi Nama", page: 37, type: "Sub-tajuk" },
+  { title: "Kata Pemeri", page: 38, type: "Sub-tajuk" },
+  { title: "Kata Penguat", page: 39, type: "Sub-tajuk" },
+  { title: "Kata Adverba", page: 40, type: "Sub-tajuk" },
+  { title: "Kata Penegas", page: 41, type: "Sub-tajuk" },
+  { title: "Kata Pangkal Ayat", page: 42, type: "Sub-tajuk" },
+  { title: "Kata Ganda", page: 43, type: "Tajuk Utama" },
+  { title: "Kata Ganda Penuh", page: 45, type: "Sub-tajuk" },
+  { title: "Kata Ganda Separa", page: 46, type: "Sub-tajuk" },
+  { title: "Kata Ganda Berentak / Berirama", page: 47, type: "Sub-tajuk" },
+  { title: "Kata Berimbuhan", page: 48, type: "Tajuk Utama" },
+  { title: "Imbuhan Awalan", page: 50, type: "Sub-tajuk" },
+  { title: "Imbuhan Akhiran", page: 51, type: "Sub-tajuk" },
+  { title: "Imbuhan Apitan", page: 52, type: "Sub-tajuk" },
+  { title: "Imbuhan Sisipan", page: 53, type: "Sub-tajuk" },
+  { title: "Pembentukan Ayat", page: 54, type: "Tajuk Utama" },
+  { title: "Jenis Ayat", page: 56, type: "Sub-tajuk" },
+  { title: "Ragam Ayat (Aktif & Pasif)", page: 61, type: "Sub-tajuk" },
+  { title: "Susunan Ayat (Biasa & Songsang)", page: 64, type: "Sub-tajuk" },
+  { title: "Ayat Majmuk", page: 65, type: "Sub-tajuk" },
+  { title: "Cakap Ajuk dan Cakap Pindah", page: 66, type: "Sub-tajuk" },
+  { title: "Penanda Wacana", page: 67, type: "Sub-tajuk" },
+  { title: "Peribahasa", page: 68, type: "Tajuk Utama" },
+  { title: "Simpulan Bahasa", page: 70, type: "Sub-tajuk" },
+  { title: "Perumpamaan", page: 74, type: "Sub-tajuk" },
+  { title: "Pepatah", page: 81, type: "Sub-tajuk" },
+  { title: "Bidalan", page: 84, type: "Sub-tajuk" },
+  { title: "Kiasan / Bandingan Semacam", page: 89, type: "Sub-tajuk" },
+  { title: "Kata-kata Hikmat", page: 92, type: "Sub-tajuk" },
+  { title: "Penjodoh Bilangan", page: 93, type: "Tajuk Utama" },
+  { title: "Polisemi", page: 99, type: "Tajuk Utama" },
+  { title: "Sinonim", page: 104, type: "Tajuk Utama" },
+  { title: "Antonim", page: 108, type: "Tajuk Utama" },
 ];
 
 export default function Home() {
@@ -93,14 +96,14 @@ export default function Home() {
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const TOTAL_PAGES = 104;
+  
+  // UPDATE: Total Page dilaraskan menjadi 108 (+4 offset)
+  const TOTAL_PAGES = 108;
 
-  // State Untuk Live Search
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof allPagesIndex>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // State Untuk AI Chat Bubble
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [aiChatHistory, setAiChatHistory] = useState<{ role: string; text: string }[]>([
@@ -116,7 +119,6 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // Logik Live Search (Berlaku serta-merta bila menaip)
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setSearchResults([]);
@@ -134,7 +136,6 @@ export default function Home() {
     setShowDropdown(false);
   };
 
-  // Logik AI Chat Assistant
   const handleAiSearch = async () => {
     if (!aiInput.trim()) return;
 
@@ -148,30 +149,32 @@ export default function Home() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer sk-aeab062d29744d0588ba1dcb7d0f2aea`, // API KEY DI SINI
+          Authorization: `Bearer sk-aeab062d29744d0588ba1dcb7d0f2aea`,
         },
         body: JSON.stringify({
           model: "deepseek-chat",
           messages: [
             {
+              // UPDATE: Otak AI dikemaskini dengan muka surat yang tepat (+4 Offset)
               role: "system",
               content: `Anda ialah Pembantu Carian Indeks untuk aplikasi web "Sistem Bahasa".
               Tugas anda HANYA memberitahu pengguna di mana muka surat (ms) topik yang mereka cari.
               Jawab seringkas mungkin. Jika ejaan salah, teka topik yang paling hampir.
               
-              Indeks Utama:
-              - Kata Nama ms 1, Am ms 2, Khas ms 4, Ganti Nama ms 5
-              - Kata Kerja ms 7, Transitif ms 8, Tak Transitif ms 10
-              - Kata Adjektif ms 11 (Sifat 13, Perasaan 14, Ukuran 15, Warna 16, Jarak 17, Cara 18, Waktu 19, Bentuk 20, Pancaindera 21)
-              - Kata Tugas ms 22 (Hubung 23, Pembenar 26, Nafi 27, Seru 28, Perintah 29, Bantu 30, Bilangan 31, Arah 32, Sendi 33, Pemeri 34, Penguat 35, Adverba 36, Penegas 37, Pangkal 38)
-              - Kata Ganda ms 39 (Penuh 41, Separa 42, Berentak 43)
-              - Imbuhan ms 44 (Awalan 46, Akhiran 47, Apitan 48, Sisipan 49)
-              - Bina Ayat ms 50 (Jenis 52, Aktif/Pasif 57, Songsang 60, Majmuk 61, Cakap Ajuk 62, Penanda Wacana 63)
-              - Peribahasa ms 64 (Simpulan Bahasa 66, Perumpamaan 70, Pepatah 77, Bidalan 80, Kiasan 85, Hikmat 88)
-              - Penjodoh Bilangan ms 89
-              - Polisemi ms 95, Sinonim ms 100, Antonim ms 104
+              Indeks Utama (Muka surat ini adalah tepat):
+              - Pengenalan: Cover ms 1, Hak Cipta ms 2, Isi Kandungan ms 3 & 4
+              - Kata Nama ms 5, Am ms 6, Khas ms 8, Ganti Nama ms 9
+              - Kata Kerja ms 11, Transitif ms 12, Tak Transitif ms 14
+              - Kata Adjektif ms 15 (Sifat 17, Perasaan 18, Ukuran 19, Warna 20, Jarak 21, Cara 22, Waktu 23, Bentuk 24, Pancaindera 25)
+              - Kata Tugas ms 26 (Hubung 27, Pembenar 30, Nafi 31, Seru 32, Perintah 33, Bantu 34, Bilangan 35, Arah 36, Sendi 37, Pemeri 38, Penguat 39, Adverba 40, Penegas 41, Pangkal 42)
+              - Kata Ganda ms 43 (Penuh 45, Separa 46, Berentak 47)
+              - Imbuhan ms 48 (Awalan 50, Akhiran 51, Apitan 52, Sisipan 53)
+              - Bina Ayat ms 54 (Jenis 56, Aktif/Pasif 61, Songsang 64, Majmuk 65, Cakap Ajuk 66, Penanda Wacana 67)
+              - Peribahasa ms 68 (Simpulan Bahasa 70, Perumpamaan 74, Pepatah 81, Bidalan 84, Kiasan 89, Hikmat 92)
+              - Penjodoh Bilangan ms 93
+              - Polisemi ms 99, Sinonim ms 104, Antonim ms 108
               
-              Contoh jawapan: "Topik Kata Ganda ada di muka surat 39."`
+              Contoh jawapan: "Topik Kata Ganda ada di muka surat 43."`
             },
             {
               role: "user",
@@ -186,13 +189,12 @@ export default function Home() {
         setAiChatHistory((prev) => [...prev, { role: "ai", text: data.choices[0].message.content }]);
       }
     } catch (error) {
-      setAiChatHistory((prev) => [...prev, { role: "ai", text: "Maaf, sistem AI sedang sibuk." }]);
+      setAiChatHistory((prev) => [...prev, { role: "ai", text: "Maaf, ralat sistem AI." }]);
     } finally {
       setIsAiLoading(false);
     }
   };
 
-  // Scroll AI Chat ke bawah secara automatik
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiChatHistory]);
@@ -210,7 +212,6 @@ export default function Home() {
     return (
       <div className={`min-h-screen bg-[#f5f7fb] flex items-center justify-center p-4 md:p-6 ${poppins.className}`}>
         <div className="w-full max-w-6xl overflow-hidden rounded-[30px] md:rounded-[40px] bg-white shadow-2xl grid lg:grid-cols-2 border border-zinc-100">
-           {/* Bahagian Login (Sama seperti sebelum ini) */}
            <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] p-12 lg:p-16 text-white relative overflow-hidden">
             <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl"></div>
             <div className="relative z-10">
@@ -228,11 +229,11 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-4 lg:gap-6 relative z-10">
               <div className="rounded-3xl bg-white/10 p-5 lg:p-7 backdrop-blur-sm border border-white/5 hover:bg-white/15 transition duration-300">
                 <h3 className="text-3xl lg:text-4xl font-black text-blue-300">{TOTAL_PAGES}</h3>
-                <p className="mt-2 text-xs lg:text-sm font-medium text-slate-300">Muka surat nota</p>
+                <p className="mt-2 text-xs lg:text-sm font-medium text-slate-300">Jumlah Halaman</p>
               </div>
               <div className="rounded-3xl bg-white/10 p-5 lg:p-7 backdrop-blur-sm border border-white/5 hover:bg-white/15 transition duration-300">
-                <h3 className="text-3xl lg:text-4xl font-black text-cyan-300">Cepat</h3>
-                <p className="mt-2 text-xs lg:text-sm font-medium text-slate-300">Live Search</p>
+                <h3 className="text-3xl lg:text-4xl font-black text-cyan-300">Pantas</h3>
+                <p className="mt-2 text-xs lg:text-sm font-medium text-slate-300">Carian Interaktif</p>
               </div>
             </div>
           </div>
@@ -262,25 +263,25 @@ export default function Home() {
     );
   }
 
-  // Hierarki Sidebar Kiri (Sama Seperti Sebelum ini)
+  // UPDATE: Sidebar +4 Offset (Muka Surat Tepat) & Ditambah Cover/Isi Kandungan
   const sidebarContents = [
-    { title: "1. Kata Nama", page: 1, subTopics: [{ title: "Kata Nama Am", page: 2 }, { title: "Kata Nama Khas", page: 4 }, { title: "Kata Ganti Nama Diri", page: 5 }, { title: "Kata Ganti Nama Diri Tunjuk", page: 6 }] },
-    { title: "2. Kata Kerja", page: 7, subTopics: [{ title: "Kata Kerja Transitif", page: 8 }, { title: "Kata Kerja Tak Transitif", page: 10 }] },
-    { title: "3. Kata Adjektif", page: 11, subTopics: [{ title: "Kata Adjektif Sifat", page: 13 }, { title: "Kata Adjektif Perasaan", page: 14 }, { title: "Kata Adjektif Ukuran", page: 15 }, { title: "Kata Adjektif Warna", page: 16 }, { title: "Kata Adjektif Jarak", page: 17 }, { title: "Kata Adjektif Cara", page: 18 }, { title: "Kata Adjektif Waktu", page: 19 }, { title: "Kata Adjektif Bentuk", page: 20 }, { title: "Kata Adjektif Pancaindera", page: 21 }] },
-    { title: "4. Kata Tugas", page: 22, subTopics: [{ title: "Kata Hubung", page: 23 }, { title: "Kata Pembenar", page: 26 }, { title: "Kata Nafi", page: 27 }, { title: "Kata Seru", page: 28 }, { title: "Kata Perintah", page: 29 }, { title: "Kata Bantu", page: 30 }, { title: "Kata Bilangan", page: 31 }, { title: "Kata Arah", page: 32 }, { title: "Kata Sendi Nama", page: 33 }, { title: "Kata Pemeri", page: 34 }, { title: "Kata Penguat", page: 35 }, { title: "Kata Adverba", page: 36 }, { title: "Kata Penegas", page: 37 }, { title: "Kata Pangkal Ayat", page: 38 }] },
-    { title: "5. Kata Ganda", page: 39, subTopics: [{ title: "Kata Ganda Penuh", page: 41 }, { title: "Kata Ganda Separa", page: 42 }, { title: "Kata Ganda Berentak / Berirama", page: 43 }] },
-    { title: "6. Kata Berimbuhan", page: 44, subTopics: [{ title: "Imbuhan Awalan", page: 46 }, { title: "Imbuhan Akhiran", page: 47 }, { title: "Imbuhan Apitan", page: 48 }, { title: "Imbuhan Sisipan", page: 49 }] },
-    { title: "7. Pembentukan Ayat", page: 50, subTopics: [{ title: "Jenis Ayat", page: 52 }, { title: "Ragam Ayat (Aktif & Pasif)", page: 57 }, { title: "Susunan Ayat (Biasa & Songsang)", page: 60 }, { title: "Ayat Majmuk", page: 61 }, { title: "Cakap Ajuk dan Cakap Pindah", page: 62 }, { title: "Penanda Wacana", page: 63 }] },
-    { title: "8. Peribahasa", page: 64, subTopics: [{ title: "Simpulan Bahasa", page: 66 }, { title: "Perumpamaan", page: 70 }, { title: "Pepatah", page: 77 }, { title: "Bidalan", page: 80 }, { title: "Kiasan / Bandingan Semacam", page: 85 }, { title: "Kata-kata Hikmat", page: 88 }] },
-    { title: "9. Penjodoh Bilangan", page: 89, subTopics: [] },
-    { title: "10. Polisemi", page: 95, subTopics: [] },
-    { title: "11. Sinonim", page: 100, subTopics: [] },
-    { title: "12. Antonim", page: 104, subTopics: [] },
+    { title: "Mukadimah", page: 1, subTopics: [{ title: "Cover Depan", page: 1 }, { title: "Nota Hak Cipta", page: 2 }, { title: "Isi Kandungan", page: 3 }] },
+    { title: "1. Kata Nama", page: 5, subTopics: [{ title: "Kata Nama Am", page: 6 }, { title: "Kata Nama Khas", page: 8 }, { title: "Kata Ganti Nama Diri", page: 9 }, { title: "Kata Ganti Nama Diri Tunjuk", page: 10 }] },
+    { title: "2. Kata Kerja", page: 11, subTopics: [{ title: "Kata Kerja Transitif", page: 12 }, { title: "Kata Kerja Tak Transitif", page: 14 }] },
+    { title: "3. Kata Adjektif", page: 15, subTopics: [{ title: "Kata Adjektif Sifat", page: 17 }, { title: "Kata Adjektif Perasaan", page: 18 }, { title: "Kata Adjektif Ukuran", page: 19 }, { title: "Kata Adjektif Warna", page: 20 }, { title: "Kata Adjektif Jarak", page: 21 }, { title: "Kata Adjektif Cara", page: 22 }, { title: "Kata Adjektif Waktu", page: 23 }, { title: "Kata Adjektif Bentuk", page: 24 }, { title: "Kata Adjektif Pancaindera", page: 25 }] },
+    { title: "4. Kata Tugas", page: 26, subTopics: [{ title: "Kata Hubung", page: 27 }, { title: "Kata Pembenar", page: 30 }, { title: "Kata Nafi", page: 31 }, { title: "Kata Seru", page: 32 }, { title: "Kata Perintah", page: 33 }, { title: "Kata Bantu", page: 34 }, { title: "Kata Bilangan", page: 35 }, { title: "Kata Arah", page: 36 }, { title: "Kata Sendi Nama", page: 37 }, { title: "Kata Pemeri", page: 38 }, { title: "Kata Penguat", page: 39 }, { title: "Kata Adverba", page: 40 }, { title: "Kata Penegas", page: 41 }, { title: "Kata Pangkal Ayat", page: 42 }] },
+    { title: "5. Kata Ganda", page: 43, subTopics: [{ title: "Kata Ganda Penuh", page: 45 }, { title: "Kata Ganda Separa", page: 46 }, { title: "Kata Ganda Berentak / Berirama", page: 47 }] },
+    { title: "6. Kata Berimbuhan", page: 48, subTopics: [{ title: "Imbuhan Awalan", page: 50 }, { title: "Imbuhan Akhiran", page: 51 }, { title: "Imbuhan Apitan", page: 52 }, { title: "Imbuhan Sisipan", page: 53 }] },
+    { title: "7. Pembentukan Ayat", page: 54, subTopics: [{ title: "Jenis Ayat", page: 56 }, { title: "Ragam Ayat (Aktif & Pasif)", page: 61 }, { title: "Susunan Ayat (Biasa & Songsang)", page: 64 }, { title: "Ayat Majmuk", page: 65 }, { title: "Cakap Ajuk dan Cakap Pindah", page: 66 }, { title: "Penanda Wacana", page: 67 }] },
+    { title: "8. Peribahasa", page: 68, subTopics: [{ title: "Simpulan Bahasa", page: 70 }, { title: "Perumpamaan", page: 74 }, { title: "Pepatah", page: 81 }, { title: "Bidalan", page: 84 }, { title: "Kiasan / Bandingan Semacam", page: 89 }, { title: "Kata-kata Hikmat", page: 92 }] },
+    { title: "9. Penjodoh Bilangan", page: 93, subTopics: [] },
+    { title: "10. Polisemi", page: 99, subTopics: [] },
+    { title: "11. Sinonim", page: 104, subTopics: [] },
+    { title: "12. Antonim", page: 108, subTopics: [] },
   ];
 
   return (
     <div className={`min-h-screen bg-[#f8fafc] text-zinc-800 ${poppins.className} flex flex-col relative`}>
-      
       {/* NAVBAR */}
       <div className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur-xl shadow-sm">
         <div className="flex flex-col md:flex-row items-center gap-4 px-4 md:px-6 py-3 md:py-4">
@@ -300,7 +301,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* LIVE SEARCH BAR */}
           <div className="flex flex-1 items-center justify-center w-full relative">
             <div className="relative w-full max-w-2xl">
               <div className="flex w-full overflow-hidden rounded-full border border-zinc-200 bg-zinc-50/50 shadow-inner focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
@@ -311,35 +311,24 @@ export default function Home() {
                   type="text"
                   value={searchQuery}
                   onFocus={() => setShowDropdown(true)}
-                  // Gunakan setTimeout supaya onclick pada dropdown sempat didaftarkan sebelum onBlur menutup dropdown
                   onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowDropdown(true);
-                  }}
+                  onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
                   placeholder="Cari tajuk di sini secara terus..."
                   className="w-full bg-transparent px-4 py-2.5 md:py-3 text-sm outline-none placeholder:text-zinc-400 font-medium"
                 />
               </div>
 
-              {/* DROPDOWN HASIL CARIAN LIVE */}
               {showDropdown && searchQuery.trim() !== "" && (
                 <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-zinc-100 max-h-[300px] overflow-y-auto custom-scrollbar z-50 py-2">
                   {searchResults.length > 0 ? (
                     searchResults.map((item, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleSelectSearchResult(item.page)}
-                        className="w-full flex items-center justify-between px-5 py-3 hover:bg-blue-50 transition-colors text-left border-b border-zinc-50 last:border-0"
-                      >
+                      <button key={index} onClick={() => handleSelectSearchResult(item.page)} className="w-full flex items-center justify-between px-5 py-3 hover:bg-blue-50 transition-colors text-left border-b border-zinc-50 last:border-0">
                         <div>
                           <p className="text-[14px] font-bold text-zinc-800">{item.title}</p>
                           <p className="text-[11px] font-medium text-zinc-400 mt-0.5">{item.type}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md text-[11px] font-bold">
-                            ms {item.page}
-                          </span>
+                          <span className="bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md text-[11px] font-bold">ms {item.page}</span>
                           <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         </div>
                       </button>
@@ -356,16 +345,13 @@ export default function Home() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <a href="https://drive.google.com/file/d/1D0j15JZJv3JhN81HkutXiSEnMMU9zz6w/view" target="_blank" rel="noreferrer" className="rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-5 py-2.5 text-sm font-bold transition-colors duration-300 border border-blue-100">
-              PDF Penuh
-            </a>
+            <a href="https://drive.google.com/file/d/1D0j15JZJv3JhN81HkutXiSEnMMU9zz6w/view" target="_blank" rel="noreferrer" className="rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-5 py-2.5 text-sm font-bold transition-colors duration-300 border border-blue-100">PDF Penuh</a>
             <img src={user.photoURL || "/avatar.png"} className="h-10 w-10 rounded-full border-2 border-zinc-200 shadow-sm" alt="User Avatar" />
           </div>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* OVERLAY UNTUK MOBILE SIDEBAR */}
         {isSidebarOpen && (
           <div className="fixed inset-0 bg-black/40 z-30 md:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />
         )}
@@ -415,6 +401,7 @@ export default function Home() {
         </div>
 
         {/* CONTENT AREA */}
+        {/* UPDATE: padding-bottom dikurangkan supaya kawalan pagination rapat ke imej */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#f5f7fb] w-full flex flex-col relative">
           <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 md:p-5 shadow-sm gap-4 flex-shrink-0">
             <div>
@@ -428,8 +415,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center pb-24 min-h-min">
-            <div className="w-full overflow-x-auto rounded-2xl border border-zinc-200 bg-white shadow-xl custom-scrollbar flex justify-center mb-8 relative group">
+          <div className="flex-1 flex flex-col items-center pb-12">
+            <div className="w-full overflow-x-auto rounded-2xl border border-zinc-200 bg-white shadow-xl custom-scrollbar flex justify-center mb-6 relative group">
               <img
                 src={`/pages/SISTEM BAHASA-${pageNumber}.webp`}
                 alt={`Muka Surat ${pageNumber}`}
@@ -438,7 +425,8 @@ export default function Home() {
               />
             </div>
 
-            <div className="w-full max-w-3xl bg-white rounded-2xl p-3 md:p-4 border border-zinc-200 shadow-sm flex items-center justify-between mt-auto">
+            {/* UPDATE: mt-auto dibuang supaya kotak ini melekat rapat dengan gambar di atas */}
+            <div className="w-full max-w-3xl bg-white rounded-2xl p-3 md:p-4 border border-zinc-200 shadow-sm flex items-center justify-between">
               <button onClick={() => setPageNumber(p => p > 1 ? p - 1 : p)} disabled={pageNumber === 1} className="flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl bg-zinc-50 text-zinc-700 font-bold text-xs md:text-sm hover:bg-zinc-100 disabled:opacity-50 transition-colors border border-zinc-100">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg> Sebelumnya
               </button>
@@ -450,14 +438,14 @@ export default function Home() {
               </button>
             </div>
             
-            <div className="mt-10 text-center text-sm font-medium text-zinc-400">
+            <div className="mt-8 text-center text-sm font-medium text-zinc-400">
               page by <span className="text-zinc-700 font-bold">cikgugrafik</span> <span className="text-blue-500 font-black">{'</>'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* TETINGKAP CHAT AI (POPUP) */}
+      {/* TETINGKAP CHAT AI */}
       {isAiChatOpen && (
         <div className="fixed bottom-24 right-4 md:right-8 w-80 md:w-96 bg-white rounded-3xl shadow-2xl border border-zinc-200 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
           <div className="bg-gradient-to-r from-[#0f172a] to-[#1e293b] p-4 flex items-center justify-between">

@@ -15,7 +15,7 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700", "900"],
 });
 
-// Komponen Logo Tersuai Supaya Lebih Pro (Buku Terbuka Moden)
+// Komponen Logo Tersuai (Buku Terbuka Moden)
 const ModernLogo = ({ className = "" }: { className?: string }) => (
   <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-md shadow-blue-500/30 ${className}`}>
     <svg 
@@ -159,7 +159,7 @@ export default function Home() {
   const handleSearch = async () => {
     if (!search) return;
 
-    setAiResult("Menjana jawapan...");
+    setAiResult("Mencari muka surat...");
     setIsSearching(true);
 
     try {
@@ -167,7 +167,6 @@ export default function Home() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Telah dikembalikan API Key untuk terus berfungsi
           Authorization: `Bearer sk-aeab062d29744d0588ba1dcb7d0f2aea`,
         },
         body: JSON.stringify({
@@ -175,8 +174,27 @@ export default function Home() {
           messages: [
             {
               role: "system",
-              content:
-                "Anda ialah pakar dan rujukan Bahasa Melayu profesional. Jawab setiap pertanyaan dalam Bahasa Melayu yang sangat mudah difahami oleh pelajar sekolah, gunakan contoh ayat jika perlu.",
+              content: `Anda ialah Pembantu Carian Indeks untuk buku "Sistem Bahasa". 
+              Tugas anda HANYA memberitahu pengguna muka surat (ms) berdasarkan apa yang mereka cari. 
+              JANGAN terangkan maksud tatabahasa. JANGAN beri contoh ayat.
+              Jika pengguna salah eja (typo), teka tajuk yang paling hampir.
+              Jawab dengan ringkas dan mesra. Contoh jawapan: "Tajuk Kata Ganda terdapat di muka surat 39." atau "Mungkin maksud anda Kata Hubung? Ia berada di muka surat 23."
+              
+              Berikut adalah Indeks Buku:
+              - Kata Nama (ms 1), Kata Nama Am (ms 2), Kata Nama Khas (ms 4), Kata Ganti Nama Diri (ms 5), Kata Ganti Nama Diri Tunjuk (ms 6)
+              - Kata Kerja (ms 7), Kata Kerja Transitif (ms 8), Kata Kerja Tak Transitif (ms 10)
+              - Kata Adjektif (ms 11), Sifat (ms 13), Perasaan (ms 14), Ukuran (ms 15), Warna (ms 16), Jarak (ms 17), Cara (ms 18), Waktu (ms 19), Bentuk (ms 20), Pancaindera (ms 21)
+              - Kata Tugas (ms 22), Hubung (ms 23), Pembenar (ms 26), Nafi (ms 27), Seru (ms 28), Perintah (ms 29), Bantu (ms 30), Bilangan (ms 31), Arah (ms 32), Sendi Nama (ms 33), Pemeri (ms 34), Penguat (ms 35), Adverba (ms 36), Penegas (ms 37), Pangkal Ayat (ms 38)
+              - Kata Ganda (ms 39), Penuh (ms 41), Separa (ms 42), Berentak/Berirama (ms 43)
+              - Kata Berimbuhan (ms 44), Awalan (ms 46), Akhiran (ms 47), Apitan (ms 48), Sisipan (ms 49)
+              - Pembentukan Ayat (ms 50), Jenis Ayat (ms 52), Ragam Ayat Aktif/Pasif (ms 57), Susunan Ayat Biasa/Songsang (ms 60), Ayat Majmuk (ms 61), Cakap Ajuk/Pindah (ms 62), Penanda Wacana (ms 63)
+              - Peribahasa (ms 64), Simpulan Bahasa (ms 66), Perumpamaan (ms 70), Pepatah (ms 77), Bidalan (ms 80), Kiasan/Bandingan Semacam (ms 85), Kata Hikmat (ms 88)
+              - Penjodoh Bilangan (ms 89)
+              - Polisemi (ms 95)
+              - Sinonim (ms 100)
+              - Antonim (ms 104)
+              
+              Jawab terus berdasarkan senarai di atas.`
             },
             {
               role: "user",
@@ -191,10 +209,10 @@ export default function Home() {
       if (data.choices && data.choices.length > 0) {
         setAiResult(data.choices[0].message.content);
       } else {
-        setAiResult("Maaf, AI tidak dapat memberikan jawapan pada masa ini.");
+        setAiResult("Maaf, AI tidak dapat mencari tajuk tersebut pada masa ini.");
       }
     } catch (error) {
-      setAiResult("Ralat carian AI. Sila semak sambungan internet atau cuba sebentar lagi.");
+      setAiResult("Ralat carian AI. Sila semak sambungan internet.");
     } finally {
       setIsSearching(false);
     }
@@ -317,7 +335,7 @@ export default function Home() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Tanya AI tatabahasa..."
+                placeholder="Cari tajuk... (cth: kata ganda)"
                 className="w-full bg-transparent px-4 md:px-6 py-2.5 md:py-3 text-sm outline-none placeholder:text-zinc-400 font-medium"
               />
               <button
@@ -325,7 +343,7 @@ export default function Home() {
                 disabled={isSearching}
                 className="bg-zinc-900 px-5 md:px-8 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-70 transition-colors"
               >
-                {isSearching ? "Cari..." : "Cari"}
+                {isSearching ? "Mencari..." : "Cari"}
               </button>
             </div>
           </div>
@@ -442,8 +460,8 @@ export default function Home() {
             <div className="mb-6 rounded-2xl border border-blue-200 bg-white shadow-lg shadow-blue-900/5 overflow-hidden flex-shrink-0 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-4 md:px-6 py-3">
                 <h2 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  Jawapan AI
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  Keputusan Carian AI
                 </h2>
               </div>
               <div className="p-5 md:p-6 bg-blue-50/30">

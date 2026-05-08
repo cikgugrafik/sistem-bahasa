@@ -94,15 +94,22 @@ export default function Home() {
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // State Dark Mode
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const TOTAL_PAGES = 108;
 
-  // State Carian
+  // Carian
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof allPagesIndex>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // State AI
+  // Bookmark & Sejarah
+  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [lastRead, setLastRead] = useState<number | null>(null);
+
+  // Analitik Tempatan
+  const [pageStats, setPageStats] = useState<Record<number, number>>({});
+
+  // AI Chat
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [aiChatHistory, setAiChatHistory] = useState<{ role: string; text: string }[]>([
@@ -111,25 +118,65 @@ export default function Home() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // State Admin
+  // Admin
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
   const [adminPass, setAdminPass] = useState("");
   const [showAdminPass, setShowAdminPass] = useState(false);
-  const [deletedPages, setDeletedPages] = useState<number[]>([]); // Untuk simpan m/s yg dipadam
+  const [deletedPages, setDeletedPages] = useState<number[]>([]);
+  const [adminTab, setAdminTab] = useState<"urus" | "analitik">("urus");
 
-  // Auth & Admin LocalStorage Init
+  // Inisialisasi Data dari LocalStorage
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-    const savedAdminAuth = localStorage.getItem("isAdminAuth");
-    if (savedAdminAuth === "true") setIsAdminAuth(true);
     
-    // Semak tema peranti atau pilihan lepas jika mahu (optional)
+    // Load Admin Auth
+    if (localStorage.getItem("isAdminAuth") === "true") setIsAdminAuth(true);
+    
+    // Load Bookmarks
+    const savedBookmarks = localStorage.getItem("sb_bookmarks");
+    if(savedBookmarks) setBookmarks(JSON.parse(savedBookmarks));
+
+    // Load Last Read
+    const savedLastRead = localStorage.getItem("sb_lastRead");
+    if(savedLastRead) setLastRead(parseInt(savedLastRead));
+
+    // Load Analitik
+    const savedStats = localStorage.getItem("sb_pageStats");
+    if(savedStats) setPageStats(JSON.parse(savedStats));
+
     return () => unsubscribe();
   }, []);
 
+  // Simpan Analitik & Terakhir Dibaca setiap kali page berubah
+  useEffect(() => {
+    if(!user) return; // Rekod bila login shj
+
+    // Save Last Read
+    localStorage.setItem("sb_lastRead", pageNumber.toString());
+    setLastRead(pageNumber);
+
+    // Save View Stats
+    setPageStats(prev => {
+      const newStats = { ...prev, [pageNumber]: (prev[pageNumber] || 0) + 1 };
+      localStorage.setItem("sb_pageStats", JSON.stringify(newStats));
+      return newStats;
+    });
+  }, [pageNumber, user]);
+
+  // Handle Bookmarks
+  const toggleBookmark = () => {
+    setBookmarks(prev => {
+      const isBookmarked = prev.includes(pageNumber);
+      const newBookmarks = isBookmarked ? prev.filter(p => p !== pageNumber) : [...prev, pageNumber].sort((a,b) => a-b);
+      localStorage.setItem("sb_bookmarks", JSON.stringify(newBookmarks));
+      return newBookmarks;
+    });
+  };
+
+  // Handle Search Local
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setSearchResults([]);
@@ -187,8 +234,24 @@ export default function Home() {
           messages: [
             {
               role: "system",
-              content: `Anda ialah Pembantu Carian Indeks untuk aplikasi web "Sistem Bahasa". Tugas anda HANYA memberitahu pengguna muka surat (ms) topik yang mereka cari.
-              Contoh jawapan: "Topik Kata Ganda ada di muka surat 43."`
+              // PROMPT AI DIPERKETATKAN: Wajib rujuk senarai ini tanpa meneka.
+              content: `Anda ialah Pembantu Carian untuk aplikasi "Sistem Bahasa". Tugas anda HANYA memberikan muka surat (ms) yang tepat. Jangan ajar maksud tatabahasa.
+              Jika ejaan salah, perbetulkan dan beritahu muka suratnya.
+              
+              Rujuk senarai indeks KETAT ini:
+              Cover (ms 1), Hak Cipta (ms 2), Isi Kandungan (ms 3, 4)
+              Kata Nama (ms 5), Am (ms 6), Khas (ms 8), Ganti Nama Diri (ms 9), Ganti Nama Tunjuk (ms 10)
+              Kata Kerja (ms 11), Transitif (ms 12), Tak Transitif (ms 14)
+              Kata Adjektif (ms 15), Sifat (ms 17), Perasaan (ms 18), Ukuran (ms 19), Warna (ms 20), Jarak (ms 21), Cara (ms 22), Waktu (ms 23), Bentuk (ms 24), Pancaindera (ms 25)
+              Kata Tugas (ms 26), Hubung (ms 27), Pembenar (ms 30), Nafi (ms 31), Seru (ms 32), Perintah (ms 33), Bantu (ms 34), Bilangan (ms 35), Arah (ms 36), Sendi (ms 37), Pemeri (ms 38), Penguat (ms 39), Adverba (ms 40), Penegas (ms 41), Pangkal (ms 42)
+              Kata Ganda (ms 43), Penuh (ms 45), Separa (ms 46), Berentak (ms 47)
+              Kata Berimbuhan (ms 48), Awalan (ms 50), Akhiran (ms 51), Apitan (ms 52), Sisipan (ms 53)
+              Bina Ayat (ms 54), Jenis (ms 56), Aktif/Pasif (ms 61), Songsang (ms 64), Majmuk (ms 65), Cakap Ajuk/Pindah (ms 66), Penanda Wacana (ms 67)
+              Peribahasa (ms 68), Simpulan Bahasa (ms 70), Perumpamaan (ms 74), Pepatah (ms 81), Bidalan (ms 84), Kiasan (ms 89), Hikmat (ms 92)
+              Penjodoh Bilangan (ms 93)
+              Polisemi (ms 99), Sinonim (ms 104), Antonim (ms 108)
+
+              Contoh jawapan: "Tajuk Kata Ganda Berentak terdapat di muka surat 47."`
             },
             { role: "user", content: userQuery },
           ],
@@ -212,13 +275,11 @@ export default function Home() {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.log(error);
-    }
+    try { await signInWithPopup(auth, provider); } 
+    catch (error) { console.log(error); }
   };
 
+  // UI Login Form
   if (!user) {
     return (
       <div className={`min-h-screen ${isDarkMode ? "bg-zinc-950 text-white" : "bg-[#f5f7fb] text-zinc-800"} flex items-center justify-center p-4 md:p-6 ${poppins.className}`}>
@@ -230,12 +291,8 @@ export default function Home() {
                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 Portal Pembelajaran Interaktif
               </div>
-              <h1 className="text-5xl lg:text-7xl font-black leading-[1.1] tracking-tight">
-                SISTEM<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">BAHASA</span>
-              </h1>
-              <p className="mt-6 max-w-md text-base lg:text-lg leading-relaxed text-slate-300">
-                Platform rujukan Bahasa Melayu moden untuk murid dan guru. Dikuasakan oleh AI.
-              </p>
+              <h1 className="text-5xl lg:text-7xl font-black leading-[1.1] tracking-tight">SISTEM<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">BAHASA</span></h1>
+              <p className="mt-6 max-w-md text-base lg:text-lg leading-relaxed text-slate-300">Platform rujukan Bahasa Melayu moden untuk murid dan guru. Dikuasakan oleh AI.</p>
             </div>
           </div>
           <div className="flex items-center justify-center p-8 lg:p-20">
@@ -272,6 +329,18 @@ export default function Home() {
     { title: "12. Antonim", pages: [108], subTopics: [] },
   ];
 
+  // Logic untuk Top 5 Analitik
+  const getTopPages = () => {
+    return Object.entries(pageStats)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([page, count]) => ({
+        page: parseInt(page),
+        count,
+        title: allPagesIndex.find(p => p.page === parseInt(page))?.title || `M/S ${page}`
+      }));
+  };
+
   return (
     <div className={`h-[100dvh] overflow-hidden ${isDarkMode ? "bg-zinc-950 text-white dark" : "bg-[#f8fafc] text-zinc-800"} ${poppins.className} flex flex-col relative transition-colors duration-300`}>
       
@@ -286,12 +355,11 @@ export default function Home() {
               <ModernLogo className="h-10 w-10 md:h-12 md:w-12" />
               <div>
                 <h1 className={`text-lg md:text-xl font-black tracking-tight leading-none ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Sistem Bahasa</h1>
-                {/* Tunjuk nama di mobile juga */}
                 <p className={`text-[10px] md:text-xs mt-1 font-medium ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Hi, {user.displayName?.split(" ")[0]}</p>
               </div>
             </div>
+            
             <div className="flex items-center gap-3 md:hidden">
-              {/* Dark mode toggle mobile */}
               <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2 rounded-full ${isDarkMode ? "bg-zinc-800 text-yellow-400" : "bg-zinc-100 text-zinc-600"}`}>
                 {isDarkMode ? <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg> : <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>}
               </button>
@@ -300,8 +368,8 @@ export default function Home() {
           </div>
 
           <div className="flex flex-1 items-center justify-center w-full relative">
-            <div className="relative w-full max-w-2xl">
-              <div className={`flex w-full overflow-hidden rounded-full border shadow-inner focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300 ${isDarkMode ? "bg-zinc-800/50 border-zinc-700" : "bg-zinc-50/50 border-zinc-200"}`}>
+            <div className="relative w-full max-w-2xl flex gap-2">
+              <div className={`flex flex-1 overflow-hidden rounded-full border shadow-inner focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300 ${isDarkMode ? "bg-zinc-800/50 border-zinc-700" : "bg-zinc-50/50 border-zinc-200"}`}>
                 <div className={`pl-5 flex items-center justify-center ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
@@ -315,9 +383,17 @@ export default function Home() {
                   className={`w-full bg-transparent px-4 py-2.5 md:py-3 text-sm outline-none font-medium ${isDarkMode ? "placeholder:text-zinc-500 text-white" : "placeholder:text-zinc-400 text-zinc-900"}`}
                 />
               </div>
+              
+              {/* BUTANG QUICK RESUME DI NAVBAR (Desktop) */}
+              {lastRead !== null && lastRead !== pageNumber && (
+                <button onClick={() => setPageNumber(lastRead)} className={`hidden md:flex items-center gap-2 px-4 rounded-full font-bold text-sm border shadow-sm transition-all whitespace-nowrap ${isDarkMode ? "bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-blue-400" : "bg-white border-zinc-200 hover:bg-zinc-50 text-blue-600"}`}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                  Sambung M/S {lastRead}
+                </button>
+              )}
 
               {showDropdown && searchQuery.trim() !== "" && (
-                <div className={`absolute top-full left-0 w-full mt-2 rounded-2xl shadow-xl border max-h-[300px] overflow-y-auto custom-scrollbar z-50 py-2 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-100"}`}>
+                <div className={`absolute top-full left-0 w-full md:w-[calc(100%-140px)] mt-2 rounded-2xl shadow-xl border max-h-[300px] overflow-y-auto custom-scrollbar z-50 py-2 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-100"}`}>
                   {searchResults.length > 0 ? (
                     searchResults.map((item, index) => (
                       <button key={index} onClick={() => handleSelectSearchResult(item.page)} className={`w-full flex items-center justify-between px-5 py-3 transition-colors text-left border-b last:border-0 ${isDarkMode ? "hover:bg-zinc-700 border-zinc-700/50" : "hover:bg-blue-50 border-zinc-50"}`}>
@@ -327,7 +403,6 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${isDarkMode ? "bg-zinc-900 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}>ms {item.page}</span>
-                          <svg className={`w-4 h-4 ${isDarkMode ? "text-zinc-500" : "text-zinc-300"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         </div>
                       </button>
                     ))
@@ -340,15 +415,12 @@ export default function Home() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            {/* Dark Mode Desktop */}
             <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? "bg-zinc-800 text-yellow-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
               {isDarkMode ? <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg> : <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>}
             </button>
-            {/* Admin Setting Desktop */}
             <button onClick={() => setIsAdminModalOpen(true)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             </button>
-
             <img src={user.photoURL || "/avatar.png"} className={`h-10 w-10 rounded-full border-2 shadow-sm ${isDarkMode ? "border-zinc-700" : "border-zinc-200"}`} alt="User Avatar" />
           </div>
         </div>
@@ -360,9 +432,8 @@ export default function Home() {
         {/* SIDEBAR SCROLL BEBAS */}
         <div className={`absolute md:relative z-40 h-full w-[280px] md:w-[320px] border-r flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 shadow-2xl md:shadow-none"} ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
           <div className={`flex items-center justify-between p-5 border-b ${isDarkMode ? "border-zinc-800" : "border-zinc-100"}`}>
-            <h2 className={`text-lg font-black uppercase tracking-wide ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Isi Kandungan</h2>
+            <h2 className={`text-lg font-black uppercase tracking-wide ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Kandungan</h2>
             <div className="flex items-center gap-2">
-               {/* Admin Button Mobile */}
                <button onClick={() => setIsAdminModalOpen(true)} className={`md:hidden p-1.5 rounded-lg ${isDarkMode ? "text-zinc-400 bg-zinc-800" : "text-zinc-500 bg-zinc-100"}`}>
                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                </button>
@@ -373,11 +444,26 @@ export default function Home() {
           </div>
 
           <div className="space-y-1 flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
-            {/* Nota Kecil Tambahan */}
+            
+            {/* Bahagian Penanda Buku (Bookmarks) */}
+            {bookmarks.length > 0 && (
+              <div className={`mb-6 p-4 rounded-2xl border ${isDarkMode ? "bg-yellow-900/10 border-yellow-900/50" : "bg-yellow-50 border-yellow-100"}`}>
+                <h3 className={`text-sm font-bold flex items-center gap-2 mb-3 ${isDarkMode ? "text-yellow-500" : "text-yellow-600"}`}>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                  Penanda Buku
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {bookmarks.map(b => (
+                    <button key={b} onClick={() => { setPageNumber(b); setIsSidebarOpen(false); }} className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${pageNumber === b ? "bg-yellow-400 text-yellow-900" : isDarkMode ? "bg-zinc-800 text-yellow-500 hover:bg-zinc-700" : "bg-white text-yellow-600 hover:bg-yellow-100"}`}>
+                      M/S {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mb-4">
-              <p className={`text-xs p-3 rounded-xl border ${isDarkMode ? "bg-blue-900/20 border-blue-800/50 text-blue-300" : "bg-blue-50 border-blue-100 text-blue-600 font-medium"}`}>
-                Nota: Klik pada butang nombor page untuk akses pantas.
-              </p>
+              <p className={`text-[11px] p-3 rounded-xl border ${isDarkMode ? "bg-blue-900/20 border-blue-800/50 text-blue-300" : "bg-blue-50 border-blue-100 text-blue-600 font-medium"}`}>Nota: Klik pada butang nombor page untuk akses pantas.</p>
             </div>
 
             {sidebarContents.map((item, index) => {
@@ -433,6 +519,14 @@ export default function Home() {
         {/* KAWASAN KANDUNGAN NOTA */}
         <div className={`flex-1 overflow-y-auto w-full flex flex-col relative custom-scrollbar p-4 md:p-8 ${isDarkMode ? "bg-zinc-950" : "bg-[#f5f7fb]"}`}>
           
+          {/* Butang Resum Mobile Sahaja (Floating Top) */}
+          {lastRead !== null && lastRead !== pageNumber && (
+            <button onClick={() => setPageNumber(lastRead)} className={`md:hidden mb-4 flex w-full items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border shadow-sm transition-all ${isDarkMode ? "bg-zinc-800 border-zinc-700 text-blue-400" : "bg-white border-blue-100 text-blue-600"}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+              Sambung Membaca M/S {lastRead}
+            </button>
+          )}
+
           {deletedPages.includes(pageNumber) ? (
              <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <svg className={`w-20 h-20 mb-4 ${isDarkMode ? "text-zinc-800" : "text-zinc-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -443,10 +537,17 @@ export default function Home() {
           ) : (
             <>
               <div className={`mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-2xl border p-4 md:p-5 shadow-sm gap-4 flex-shrink-0 ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
-                <div>
-                  <h2 className={`text-xl md:text-2xl font-black tracking-tight ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Nota Interaktif</h2>
-                  <p className={`mt-0.5 text-xs md:text-sm font-medium ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {pageNumber} daripada {TOTAL_PAGES}</p>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h2 className={`text-xl md:text-2xl font-black tracking-tight ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Nota Interaktif</h2>
+                    <p className={`mt-0.5 text-xs md:text-sm font-medium ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {pageNumber} daripada {TOTAL_PAGES}</p>
+                  </div>
+                  {/* Butang Bintang Bookmark */}
+                  <button onClick={toggleBookmark} className={`p-2 rounded-full transition-all ${bookmarks.includes(pageNumber) ? "bg-yellow-100 text-yellow-500 hover:bg-yellow-200" : isDarkMode ? "bg-zinc-800 text-zinc-500 hover:text-yellow-500" : "bg-zinc-50 text-zinc-300 hover:text-yellow-500"}`}>
+                    <svg className="w-7 h-7" fill={bookmarks.includes(pageNumber) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                  </button>
                 </div>
+
                 <div className={`inline-flex items-center rounded-xl border p-1 w-full sm:w-auto justify-center ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-zinc-50 border-zinc-200"}`}>
                   <button onClick={() => setZoom((prev) => Math.max(prev - 0.1, 0.5))} className={`flex-1 sm:flex-none rounded-lg px-3 py-2 text-sm font-bold transition-all ${isDarkMode ? "text-zinc-300 hover:bg-zinc-700" : "text-zinc-600 hover:bg-white hover:shadow-sm"}`}>-</button>
                   <button onClick={() => setZoom(1)} className={`flex-1 sm:flex-none rounded-lg px-4 py-2 text-sm font-bold border-x transition-all ${isDarkMode ? "text-zinc-300 border-zinc-700 hover:bg-zinc-700" : "text-zinc-600 border-zinc-200/50 hover:bg-white hover:shadow-sm"}`}>100%</button>
@@ -556,11 +657,11 @@ export default function Home() {
       {/* ADMIN MODAL OVERLAY */}
       {isAdminModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-           <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${isDarkMode ? "bg-zinc-900 border border-zinc-800" : "bg-white"}`}>
+           <div className={`w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${isDarkMode ? "bg-zinc-900 border border-zinc-800" : "bg-white"}`}>
               <div className="p-6 border-b flex justify-between items-center bg-gradient-to-r from-slate-900 to-slate-800 text-white">
                 <div>
-                  <h2 className="text-xl font-black">Tetapan Admin</h2>
-                  <p className="text-xs text-slate-400 mt-1">Sistem pengurusan kandungan (Client-side)</p>
+                  <h2 className="text-xl font-black">Papan Pemuka Admin</h2>
+                  <p className="text-xs text-slate-400 mt-1">Pengurusan Sistem & Analitik</p>
                 </div>
                 <button onClick={() => setIsAdminModalOpen(false)} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -577,7 +678,7 @@ export default function Home() {
                     <p className={`text-sm mt-2 ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Sila masukkan kata laluan untuk log masuk.</p>
                   </div>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-w-sm mx-auto">
                     <div className={`flex items-center rounded-xl border focus-within:ring-2 focus-within:ring-blue-500/20 overflow-hidden ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-zinc-50 border-zinc-200"}`}>
                       <input 
                         type={showAdminPass ? "text" : "password"} 
@@ -597,60 +698,102 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className={`flex-1 overflow-y-auto p-6 ${isDarkMode ? "bg-zinc-900" : "bg-slate-50"}`}>
-                   <div className="space-y-6">
+                <div className={`flex-1 flex flex-col overflow-hidden ${isDarkMode ? "bg-zinc-900" : "bg-slate-50"}`}>
+                   
+                   {/* Admin Tabs */}
+                   <div className={`flex border-b px-6 pt-4 gap-6 ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"}`}>
+                     <button onClick={() => setAdminTab("urus")} className={`pb-3 text-sm font-bold border-b-2 transition-colors ${adminTab === "urus" ? "border-blue-600 text-blue-600" : "border-transparent text-zinc-500 hover:text-zinc-700"}`}>Pengurusan M/S</button>
+                     <button onClick={() => setAdminTab("analitik")} className={`pb-3 text-sm font-bold border-b-2 transition-colors ${adminTab === "analitik" ? "border-blue-600 text-blue-600" : "border-transparent text-zinc-500 hover:text-zinc-700"}`}>Analitik Penggunaan</button>
+                   </div>
+
+                   <div className="flex-1 overflow-y-auto p-6">
                       
-                      {/* Upload Section */}
-                      <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
-                        <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Muat Naik Muka Surat Baru</h4>
-                        <p className={`text-xs mb-4 ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Format disokong: PNG, WEBP, JPG</p>
-                        <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ${isDarkMode ? "border-zinc-600 hover:bg-zinc-700/50" : "border-blue-200 bg-blue-50/50 hover:bg-blue-50"}`}>
-                           <input type="file" className="hidden" id="upload-page" onChange={() => alert('Berjaya dimuat naik! (Simulasi Client-Side)')} />
-                           <label htmlFor="upload-page" className="cursor-pointer">
-                              <svg className={`w-8 h-8 mx-auto mb-2 ${isDarkMode ? "text-zinc-400" : "text-blue-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                              <span className={`text-sm font-bold ${isDarkMode ? "text-zinc-300" : "text-blue-700"}`}>Klik untuk pilih fail</span>
-                           </label>
-                        </div>
-                      </div>
-
-                      {/* Manage Current Page Section */}
-                      <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
-                        <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Urus Muka Surat Semasa (M/S {pageNumber})</h4>
-                        <p className={`text-xs mb-4 ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Anda sedang melihat muka surat {pageNumber}.</p>
-                        <div className="flex gap-3">
-                          <button onClick={() => handleDeletePage(pageNumber)} className={`flex-1 py-2.5 rounded-xl border text-sm font-bold flex justify-center items-center gap-2 transition ${isDarkMode ? "bg-red-900/20 border-red-800/50 text-red-400 hover:bg-red-900/40" : "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"}`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            Padam M/S {pageNumber}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Rest List of Deleted */}
-                      {deletedPages.length > 0 && (
-                        <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-yellow-900/20 border-yellow-800/50" : "bg-yellow-50 border-yellow-200"}`}>
-                          <h4 className={`text-sm font-bold flex items-center gap-2 ${isDarkMode ? "text-yellow-500" : "text-yellow-700"}`}>
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                            Muka Surat Dipadam:
-                          </h4>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                             {deletedPages.map(p => (
-                               <span key={p} className={`px-2 py-1 rounded text-xs font-bold ${isDarkMode ? "bg-yellow-900/50 text-yellow-200" : "bg-yellow-200 text-yellow-800"}`}>M/S {p}</span>
-                             ))}
+                      {adminTab === "urus" && (
+                        <div className="space-y-6">
+                          <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
+                            <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Muat Naik Muka Surat Baru</h4>
+                            <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition mt-4 ${isDarkMode ? "border-zinc-600 hover:bg-zinc-700/50" : "border-blue-200 bg-blue-50/50 hover:bg-blue-50"}`}>
+                               <input type="file" className="hidden" id="upload-page" onChange={() => alert('Berjaya dimuat naik! (Simulasi Client-Side)')} />
+                               <label htmlFor="upload-page" className="cursor-pointer">
+                                  <svg className={`w-8 h-8 mx-auto mb-2 ${isDarkMode ? "text-zinc-400" : "text-blue-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                                  <span className={`text-sm font-bold ${isDarkMode ? "text-zinc-300" : "text-blue-700"}`}>Klik untuk pilih fail</span>
+                               </label>
+                            </div>
                           </div>
-                          <button onClick={() => setDeletedPages([])} className={`mt-3 text-xs font-bold underline ${isDarkMode ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}>Restore Semua</button>
+
+                          <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
+                            <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Padam Muka Surat Semasa (M/S {pageNumber})</h4>
+                            <div className="flex gap-3 mt-4">
+                              <button onClick={() => handleDeletePage(pageNumber)} className={`flex-1 py-3 rounded-xl border text-sm font-bold flex justify-center items-center gap-2 transition ${isDarkMode ? "bg-red-900/20 border-red-800/50 text-red-400 hover:bg-red-900/40" : "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"}`}>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                Padam M/S {pageNumber}
+                              </button>
+                            </div>
+                          </div>
+
+                          {deletedPages.length > 0 && (
+                            <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-yellow-900/20 border-yellow-800/50" : "bg-yellow-50 border-yellow-200"}`}>
+                              <h4 className={`text-sm font-bold flex items-center gap-2 ${isDarkMode ? "text-yellow-500" : "text-yellow-700"}`}>
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                Muka Surat Dipadam:
+                              </h4>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {deletedPages.map(p => (
+                                  <span key={p} className={`px-2 py-1 rounded text-xs font-bold ${isDarkMode ? "bg-yellow-900/50 text-yellow-200" : "bg-yellow-200 text-yellow-800"}`}>M/S {p}</span>
+                                ))}
+                              </div>
+                              <button onClick={() => setDeletedPages([])} className={`mt-3 text-xs font-bold underline ${isDarkMode ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}>Restore Semua</button>
+                            </div>
+                          )}
                         </div>
                       )}
 
+                      {adminTab === "analitik" && (
+                        <div className="space-y-6">
+                           <div className={`p-6 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
+                              <div className="flex items-center gap-4 mb-6">
+                                <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                                </div>
+                                <div>
+                                  <h3 className={`text-lg font-bold ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Top 5 Muka Surat</h3>
+                                  <p className={`text-xs ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Halaman paling kerap dibuka oleh anda.</p>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                {Object.keys(pageStats).length === 0 ? (
+                                  <p className="text-sm text-zinc-500 italic">Tiada data analitik lagi. Sila buka nota untuk menjana data.</p>
+                                ) : (
+                                  getTopPages().map((stat, idx) => (
+                                    <div key={idx} className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${idx === 0 ? "bg-yellow-400 text-yellow-900" : isDarkMode ? "bg-zinc-700 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}>
+                                          {idx + 1}
+                                        </div>
+                                        <div>
+                                          <p className={`text-sm font-bold ${isDarkMode ? "text-zinc-200" : "text-zinc-800"}`}>{stat.title}</p>
+                                          <p className={`text-[10px] ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>M/S {stat.page}</p>
+                                        </div>
+                                      </div>
+                                      <div className={`text-sm font-bold px-3 py-1 rounded-full ${isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600"}`}>
+                                        {stat.count} views
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                           </div>
+                        </div>
+                      )}
+                   </div>
+
+                   <div className={`p-4 border-t flex justify-end ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "bg-white border-zinc-200"}`}>
+                     <button onClick={handleAdminLogout} className={`px-5 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? "bg-zinc-700 text-white hover:bg-zinc-600" : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"}`}>
+                       Log Keluar Admin
+                     </button>
                    </div>
                 </div>
-              )}
-
-              {isAdminAuth && (
-                 <div className={`p-4 border-t flex justify-end bg-zinc-50 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : ""}`}>
-                   <button onClick={handleAdminLogout} className={`px-5 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? "bg-zinc-700 text-white hover:bg-zinc-600" : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"}`}>
-                     Log Keluar Admin
-                   </button>
-                 </div>
               )}
            </div>
         </div>

@@ -94,13 +94,15 @@ export default function Home() {
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+  const [isDarkMode, setIsDarkMode] = useState(false); // State Dark Mode
   const TOTAL_PAGES = 108;
 
+  // State Carian
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof allPagesIndex>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
+  // State AI
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [aiChatHistory, setAiChatHistory] = useState<{ role: string; text: string }[]>([
@@ -109,10 +111,22 @@ export default function Home() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // State Admin
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const [adminPass, setAdminPass] = useState("");
+  const [showAdminPass, setShowAdminPass] = useState(false);
+  const [deletedPages, setDeletedPages] = useState<number[]>([]); // Untuk simpan m/s yg dipadam
+
+  // Auth & Admin LocalStorage Init
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
+    const savedAdminAuth = localStorage.getItem("isAdminAuth");
+    if (savedAdminAuth === "true") setIsAdminAuth(true);
+    
+    // Semak tema peranti atau pilihan lepas jika mahu (optional)
     return () => unsubscribe();
   }, []);
 
@@ -133,9 +147,29 @@ export default function Home() {
     setShowDropdown(false);
   };
 
+  const handleAdminLogin = () => {
+    if (adminPass === "admin@paan") {
+      setIsAdminAuth(true);
+      localStorage.setItem("isAdminAuth", "true");
+    } else {
+      alert("Kata laluan tidak sah!");
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuth(false);
+    setAdminPass("");
+    localStorage.removeItem("isAdminAuth");
+  };
+
+  const handleDeletePage = (p: number) => {
+    if(confirm(`Anda pasti mahu memadam muka surat ${p}?`)) {
+      setDeletedPages(prev => [...prev, p]);
+    }
+  };
+
   const handleAiSearch = async () => {
     if (!aiInput.trim()) return;
-
     const userQuery = aiInput;
     setAiInput("");
     setAiChatHistory((prev) => [...prev, { role: "user", text: userQuery }]);
@@ -154,12 +188,9 @@ export default function Home() {
             {
               role: "system",
               content: `Anda ialah Pembantu Carian Indeks untuk aplikasi web "Sistem Bahasa". Tugas anda HANYA memberitahu pengguna muka surat (ms) topik yang mereka cari.
-              Contoh: "Topik Kata Ganda ada di muka surat 43."`
+              Contoh jawapan: "Topik Kata Ganda ada di muka surat 43."`
             },
-            {
-              role: "user",
-              content: userQuery,
-            },
+            { role: "user", content: userQuery },
           ],
         }),
       });
@@ -190,9 +221,8 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className={`min-h-screen bg-[#f5f7fb] flex items-center justify-center p-4 md:p-6 ${poppins.className}`}>
-        <div className="w-full max-w-6xl overflow-hidden rounded-[30px] md:rounded-[40px] bg-white shadow-2xl grid lg:grid-cols-2 border border-zinc-100">
-           {/* LOGIN SECTION - Kekal Sama */}
+      <div className={`min-h-screen ${isDarkMode ? "bg-zinc-950 text-white" : "bg-[#f5f7fb] text-zinc-800"} flex items-center justify-center p-4 md:p-6 ${poppins.className}`}>
+        <div className={`w-full max-w-6xl overflow-hidden rounded-[30px] md:rounded-[40px] ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-100"} shadow-2xl grid lg:grid-cols-2 border`}>
            <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] p-12 lg:p-16 text-white relative overflow-hidden">
             <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl"></div>
             <div className="relative z-10">
@@ -208,14 +238,14 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-center p-8 lg:p-20 bg-white">
+          <div className="flex items-center justify-center p-8 lg:p-20">
             <div className="w-full max-w-md text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-10 lg:mb-12 w-full">
                 <div className="lg:hidden mx-auto mb-6 flex justify-center"><ModernLogo className="h-16 w-16" /></div>
-                <h2 className="text-3xl lg:text-5xl font-black text-zinc-900 tracking-tight text-center lg:text-left">Selamat Datang</h2>
-                <p className="mt-3 lg:mt-4 text-zinc-500 leading-relaxed text-base lg:text-lg text-center lg:text-left">Log masuk menggunakan akaun Google untuk mengakses sistem pembelajaran premium.</p>
+                <h2 className="text-3xl lg:text-5xl font-black tracking-tight text-center lg:text-left">Selamat Datang</h2>
+                <p className={`mt-3 lg:mt-4 leading-relaxed text-base lg:text-lg text-center lg:text-left ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Log masuk menggunakan akaun Google untuk mengakses sistem pembelajaran premium.</p>
               </div>
-              <button onClick={signInWithGoogle} className="group flex w-full items-center justify-center gap-4 rounded-2xl bg-zinc-900 px-6 py-4 text-base lg:text-lg font-bold text-white hover:bg-blue-600 transition-all duration-300 shadow-lg">
+              <button onClick={signInWithGoogle} className="group flex w-full items-center justify-center gap-4 rounded-2xl bg-blue-600 px-6 py-4 text-base lg:text-lg font-bold text-white hover:bg-blue-700 transition-all duration-300 shadow-lg">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-6 w-6 lg:h-7 lg:w-7 bg-white rounded-full p-1 group-hover:scale-110 transition-transform" alt="Google Logo" />
                 Log Masuk Google
               </button>
@@ -226,7 +256,6 @@ export default function Home() {
     );
   }
 
-  // UPDATE: LOGIK MULTI-PAGE ARRAY
   const sidebarContents = [
     { title: "Mukadimah", pages: [1], subTopics: [{ title: "Cover Depan", pages: [1] }, { title: "Nota Hak Cipta", pages: [2] }, { title: "Isi Kandungan", pages: [3, 4] }] },
     { title: "1. Kata Nama", pages: [5], subTopics: [{ title: "Kata Nama Am", pages: [6, 7] }, { title: "Kata Nama Khas", pages: [8] }, { title: "Kata Ganti Nama Diri", pages: [9] }, { title: "Kata Ganti Nama Diri Tunjuk", pages: [10] }] },
@@ -244,32 +273,36 @@ export default function Home() {
   ];
 
   return (
-    // FIX PENTING: Ditukar ke `h-[100dvh] overflow-hidden` untuk hentikan root scroll
-    <div className={`h-[100dvh] overflow-hidden bg-[#f8fafc] text-zinc-800 ${poppins.className} flex flex-col relative`}>
+    <div className={`h-[100dvh] overflow-hidden ${isDarkMode ? "bg-zinc-950 text-white dark" : "bg-[#f8fafc] text-zinc-800"} ${poppins.className} flex flex-col relative transition-colors duration-300`}>
       
       {/* NAVBAR */}
-      <div className="z-40 border-b border-zinc-200 bg-white/90 backdrop-blur-xl shadow-sm flex-shrink-0">
+      <div className={`z-40 border-b flex-shrink-0 backdrop-blur-xl shadow-sm ${isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white/90 border-zinc-200"}`}>
         <div className="flex flex-col md:flex-row items-center gap-4 px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between w-full md:w-auto md:min-w-[260px]">
             <div className="flex items-center gap-3 md:gap-4">
-              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden p-2 -ml-2 text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`md:hidden p-2 -ml-2 rounded-lg transition-colors ${isDarkMode ? "text-zinc-300 hover:bg-zinc-800" : "text-zinc-600 hover:bg-zinc-100"}`}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
               </button>
               <ModernLogo className="h-10 w-10 md:h-12 md:w-12" />
-              <div className="hidden sm:block md:block">
-                <h1 className="text-lg md:text-xl font-black tracking-tight text-zinc-900 leading-none">Sistem Bahasa</h1>
-                <p className="text-xs text-zinc-500 mt-1 font-medium hidden md:block">Hi, {user.displayName?.split(" ")[0]}</p>
+              <div>
+                <h1 className={`text-lg md:text-xl font-black tracking-tight leading-none ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Sistem Bahasa</h1>
+                {/* Tunjuk nama di mobile juga */}
+                <p className={`text-[10px] md:text-xs mt-1 font-medium ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Hi, {user.displayName?.split(" ")[0]}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 md:hidden">
+              {/* Dark mode toggle mobile */}
+              <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2 rounded-full ${isDarkMode ? "bg-zinc-800 text-yellow-400" : "bg-zinc-100 text-zinc-600"}`}>
+                {isDarkMode ? <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg> : <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>}
+              </button>
               <img src={user.photoURL || "/avatar.png"} className="h-8 w-8 rounded-full border border-zinc-200 shadow-sm" alt="User" />
             </div>
           </div>
 
           <div className="flex flex-1 items-center justify-center w-full relative">
             <div className="relative w-full max-w-2xl">
-              <div className="flex w-full overflow-hidden rounded-full border border-zinc-200 bg-zinc-50/50 shadow-inner focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
-                <div className="pl-5 flex items-center justify-center text-zinc-400">
+              <div className={`flex w-full overflow-hidden rounded-full border shadow-inner focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300 ${isDarkMode ? "bg-zinc-800/50 border-zinc-700" : "bg-zinc-50/50 border-zinc-200"}`}>
+                <div className={`pl-5 flex items-center justify-center ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
                 <input
@@ -279,68 +312,84 @@ export default function Home() {
                   onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                   onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
                   placeholder="Cari tajuk di sini secara terus..."
-                  className="w-full bg-transparent px-4 py-2.5 md:py-3 text-sm outline-none placeholder:text-zinc-400 font-medium"
+                  className={`w-full bg-transparent px-4 py-2.5 md:py-3 text-sm outline-none font-medium ${isDarkMode ? "placeholder:text-zinc-500 text-white" : "placeholder:text-zinc-400 text-zinc-900"}`}
                 />
               </div>
 
               {showDropdown && searchQuery.trim() !== "" && (
-                <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-zinc-100 max-h-[300px] overflow-y-auto custom-scrollbar z-50 py-2">
+                <div className={`absolute top-full left-0 w-full mt-2 rounded-2xl shadow-xl border max-h-[300px] overflow-y-auto custom-scrollbar z-50 py-2 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-100"}`}>
                   {searchResults.length > 0 ? (
                     searchResults.map((item, index) => (
-                      <button key={index} onClick={() => handleSelectSearchResult(item.page)} className="w-full flex items-center justify-between px-5 py-3 hover:bg-blue-50 transition-colors text-left border-b border-zinc-50 last:border-0">
+                      <button key={index} onClick={() => handleSelectSearchResult(item.page)} className={`w-full flex items-center justify-between px-5 py-3 transition-colors text-left border-b last:border-0 ${isDarkMode ? "hover:bg-zinc-700 border-zinc-700/50" : "hover:bg-blue-50 border-zinc-50"}`}>
                         <div>
-                          <p className="text-[14px] font-bold text-zinc-800">{item.title}</p>
-                          <p className="text-[11px] font-medium text-zinc-400 mt-0.5">{item.type}</p>
+                          <p className={`text-[14px] font-bold ${isDarkMode ? "text-zinc-100" : "text-zinc-800"}`}>{item.title}</p>
+                          <p className={`text-[11px] font-medium mt-0.5 ${isDarkMode ? "text-zinc-400" : "text-zinc-400"}`}>{item.type}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md text-[11px] font-bold">ms {item.page}</span>
-                          <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                          <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${isDarkMode ? "bg-zinc-900 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}>ms {item.page}</span>
+                          <svg className={`w-4 h-4 ${isDarkMode ? "text-zinc-500" : "text-zinc-300"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         </div>
                       </button>
                     ))
                   ) : (
-                    <div className="px-5 py-4 text-sm text-zinc-500 text-center font-medium">Tiada tajuk ditemui.</div>
+                    <div className={`px-5 py-4 text-sm text-center font-medium ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Tiada tajuk ditemui.</div>
                   )}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
-            <a href="https://drive.google.com/file/d/1D0j15JZJv3JhN81HkutXiSEnMMU9zz6w/view" target="_blank" rel="noreferrer" className="rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-5 py-2.5 text-sm font-bold transition-colors duration-300 border border-blue-100">PDF Penuh</a>
-            <img src={user.photoURL || "/avatar.png"} className="h-10 w-10 rounded-full border-2 border-zinc-200 shadow-sm" alt="User Avatar" />
+          <div className="hidden md:flex items-center gap-3">
+            {/* Dark Mode Desktop */}
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? "bg-zinc-800 text-yellow-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
+              {isDarkMode ? <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg> : <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>}
+            </button>
+            {/* Admin Setting Desktop */}
+            <button onClick={() => setIsAdminModalOpen(true)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+
+            <img src={user.photoURL || "/avatar.png"} className={`h-10 w-10 rounded-full border-2 shadow-sm ${isDarkMode ? "border-zinc-700" : "border-zinc-200"}`} alt="User Avatar" />
           </div>
         </div>
       </div>
 
-      {/* MAIN BODY AREA (FLEX & INDEPENDENT SCROLL) */}
       <div className="flex flex-1 overflow-hidden relative">
-        
-        {isSidebarOpen && (
-          <div className="fixed inset-0 bg-black/40 z-30 md:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />
-        )}
+        {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />}
 
         {/* SIDEBAR SCROLL BEBAS */}
-        <div className={`absolute md:relative z-40 h-full w-[280px] md:w-[320px] border-r border-zinc-200 bg-white flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 shadow-2xl md:shadow-none"}`}>
-          <div className="flex items-center justify-between p-6 border-b border-zinc-100">
-            <h2 className="text-lg font-black text-zinc-900 uppercase tracking-wide">Isi Kandungan</h2>
-            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1 text-zinc-400 hover:text-zinc-700 bg-zinc-50 rounded-full">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+        <div className={`absolute md:relative z-40 h-full w-[280px] md:w-[320px] border-r flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 shadow-2xl md:shadow-none"} ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
+          <div className={`flex items-center justify-between p-5 border-b ${isDarkMode ? "border-zinc-800" : "border-zinc-100"}`}>
+            <h2 className={`text-lg font-black uppercase tracking-wide ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Isi Kandungan</h2>
+            <div className="flex items-center gap-2">
+               {/* Admin Button Mobile */}
+               <button onClick={() => setIsAdminModalOpen(true)} className={`md:hidden p-1.5 rounded-lg ${isDarkMode ? "text-zinc-400 bg-zinc-800" : "text-zinc-500 bg-zinc-100"}`}>
+                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+               </button>
+               <button onClick={() => setIsSidebarOpen(false)} className={`md:hidden p-1.5 rounded-full ${isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-50 text-zinc-400"}`}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+               </button>
+            </div>
           </div>
 
           <div className="space-y-1 flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+            {/* Nota Kecil Tambahan */}
+            <div className="mb-4">
+              <p className={`text-xs p-3 rounded-xl border ${isDarkMode ? "bg-blue-900/20 border-blue-800/50 text-blue-300" : "bg-blue-50 border-blue-100 text-blue-600 font-medium"}`}>
+                Nota: Klik pada butang nombor page untuk akses pantas.
+              </p>
+            </div>
+
             {sidebarContents.map((item, index) => {
               const isMainActive = item.pages.includes(pageNumber);
               return (
                 <div key={index} className="mb-2">
-                  <div className={`group flex flex-col w-full rounded-xl px-4 py-3 text-left transition-all duration-200 ${isMainActive ? "bg-blue-600 shadow-md shadow-blue-500/20" : "bg-transparent hover:bg-zinc-100"}`}>
-                    <div className="flex items-start justify-between">
-                      <span className={`text-[14px] ${isMainActive ? "font-bold text-white" : "font-semibold text-zinc-800"}`}>{item.title}</span>
-                      {/* Array of Main Page Pills */}
-                      <div className="flex flex-wrap gap-1 justify-end max-w-[50%]">
-                        {item.pages.map(p => (
-                          <button key={p} onClick={() => { setPageNumber(p); setIsSidebarOpen(false); }} className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-colors ${pageNumber === p ? (isMainActive ? "bg-white text-blue-600" : "bg-blue-500 text-white") : (isMainActive ? "bg-blue-500 text-blue-100 hover:bg-blue-400" : "bg-zinc-200 text-zinc-500 hover:bg-zinc-300")}`}>
+                  <div className={`group flex flex-col w-full rounded-xl px-4 py-3 text-left transition-all duration-200 ${isMainActive ? "bg-blue-600 shadow-md shadow-blue-500/20" : isDarkMode ? "hover:bg-zinc-800" : "hover:bg-zinc-100"}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className={`text-[14px] mt-1 ${isMainActive ? "font-bold text-white" : isDarkMode ? "font-semibold text-zinc-200" : "font-semibold text-zinc-800"}`}>{item.title}</span>
+                      <div className="flex flex-wrap gap-1.5 justify-end">
+                        {item.pages.filter(p => !deletedPages.includes(p)).map(p => (
+                          <button key={p} onClick={() => { setPageNumber(p); setIsSidebarOpen(false); }} className={`min-w-[36px] py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-colors ${pageNumber === p ? (isMainActive ? "bg-white text-blue-600" : "bg-blue-500 text-white") : (isMainActive ? "bg-blue-500 text-blue-100 hover:bg-blue-400" : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-200 text-zinc-500 hover:bg-zinc-300")}`}>
                             {p}
                           </button>
                         ))}
@@ -349,20 +398,19 @@ export default function Home() {
                   </div>
 
                   {item.subTopics && item.subTopics.length > 0 && (
-                    <div className="mt-1 ml-6 pl-3 border-l-2 border-zinc-100 space-y-1">
+                    <div className={`mt-1 ml-6 pl-3 border-l-2 space-y-1 ${isDarkMode ? "border-zinc-800" : "border-zinc-100"}`}>
                       {item.subTopics.map((sub, subIndex) => {
                         const isSubActive = sub.pages.includes(pageNumber);
                         return (
-                          <div key={subIndex} className={`group flex flex-col w-full rounded-lg px-3 py-2.5 text-left transition-all duration-200 ${isSubActive ? "bg-blue-50" : "hover:bg-zinc-50"}`}>
+                          <div key={subIndex} className={`group flex flex-col w-full rounded-lg px-3 py-2.5 text-left transition-all duration-200 ${isSubActive ? (isDarkMode ? "bg-blue-900/30" : "bg-blue-50") : (isDarkMode ? "hover:bg-zinc-800" : "hover:bg-zinc-50")}`}>
                             <div className="flex items-start justify-between gap-2">
-                              <span className={`text-[13px] relative ${isSubActive ? "text-blue-700 font-semibold" : "text-zinc-500"}`}>
+                              <span className={`text-[13px] relative mt-1 ${isSubActive ? (isDarkMode ? "text-blue-400 font-semibold" : "text-blue-700 font-semibold") : (isDarkMode ? "text-zinc-400" : "text-zinc-500")}`}>
                                 {isSubActive && <span className="absolute -left-4 top-1.5 h-1.5 w-1.5 rounded-full bg-blue-600 shadow-sm"></span>}
                                 {sub.title}
                               </span>
-                              {/* Array of Sub Page Pills */}
-                              <div className="flex flex-wrap gap-1 justify-end max-w-[50%]">
-                                {sub.pages.map(p => (
-                                  <button key={p} onClick={() => { setPageNumber(p); setIsSidebarOpen(false); }} className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-colors ${pageNumber === p ? "bg-blue-500 text-white shadow-sm" : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"}`}>
+                              <div className="flex flex-wrap gap-1.5 justify-end">
+                                {sub.pages.filter(p => !deletedPages.includes(p)).map(p => (
+                                  <button key={p} onClick={() => { setPageNumber(p); setIsSidebarOpen(false); }} className={`min-w-[36px] py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-colors ${pageNumber === p ? "bg-blue-500 text-white shadow-sm" : isDarkMode ? "bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300" : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"}`}>
                                     {p}
                                   </button>
                                 ))}
@@ -377,58 +425,69 @@ export default function Home() {
               );
             })}
           </div>
-          <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 flex-shrink-0">
-            <button onClick={() => signOut(auth)} className="w-full rounded-xl border border-red-200 bg-white py-3 text-sm font-bold text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-300 shadow-sm">Log Keluar</button>
+          <div className={`p-4 border-t flex-shrink-0 ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "border-zinc-100 bg-zinc-50/50"}`}>
+            <button onClick={() => signOut(auth)} className={`w-full rounded-xl border py-3 text-sm font-bold transition-all duration-300 shadow-sm ${isDarkMode ? "bg-zinc-800 border-red-900/50 text-red-400 hover:bg-zinc-700" : "bg-white border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"}`}>Log Keluar</button>
           </div>
         </div>
 
-        {/* KAWASAN KANDUNGAN NOTA (SCROLL BEBAS) */}
-        <div className="flex-1 overflow-y-auto bg-[#f5f7fb] w-full flex flex-col relative custom-scrollbar p-4 md:p-8">
-          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 md:p-5 shadow-sm gap-4 flex-shrink-0">
-            <div>
-              <h2 className="text-xl md:text-2xl font-black tracking-tight text-zinc-900">Nota Interaktif</h2>
-              <p className="mt-0.5 text-xs md:text-sm font-medium text-zinc-500">Muka surat {pageNumber} daripada {TOTAL_PAGES}</p>
-            </div>
-            <div className="inline-flex items-center rounded-xl border border-zinc-200 bg-zinc-50 p-1 w-full sm:w-auto justify-center">
-              <button onClick={() => setZoom((prev) => Math.max(prev - 0.1, 0.5))} className="flex-1 sm:flex-none rounded-lg px-3 py-2 text-sm font-bold text-zinc-600 hover:bg-white hover:shadow-sm transition-all">-</button>
-              <button onClick={() => setZoom(1)} className="flex-1 sm:flex-none rounded-lg px-4 py-2 text-sm font-bold text-zinc-600 hover:bg-white hover:shadow-sm border-x border-zinc-200/50 transition-all">100%</button>
-              <button onClick={() => setZoom((prev) => prev + 0.1)} className="flex-1 sm:flex-none rounded-lg px-3 py-2 text-sm font-bold text-zinc-600 hover:bg-white hover:shadow-sm transition-all">+</button>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center pb-24">
-            <div className="w-full overflow-x-auto rounded-2xl border border-zinc-200 bg-white shadow-xl custom-scrollbar flex justify-center mb-6 relative group">
-              <img
-                src={`/pages/SISTEM BAHASA-${pageNumber}.webp`}
-                alt={`Muka Surat ${pageNumber}`}
-                style={{ width: `${100 * zoom}%`, minWidth: `${300 * zoom}px`, maxWidth: `${850 * zoom}px`, transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
-                className="h-auto block origin-top"
-              />
-            </div>
-
-            {/* BUTANG NAVIGASI RAPAT DI BAWAH GAMBAR */}
-            <div className="w-full max-w-3xl bg-white rounded-2xl p-3 md:p-4 border border-zinc-200 shadow-sm flex items-center justify-between">
-              <button onClick={() => setPageNumber(p => p > 1 ? p - 1 : p)} disabled={pageNumber === 1} className="flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl bg-zinc-50 text-zinc-700 font-bold text-xs md:text-sm hover:bg-zinc-100 disabled:opacity-50 transition-colors border border-zinc-100">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg> Sebelumnya
-              </button>
-              <div className="text-xs md:text-sm font-semibold text-zinc-500">
-                Halaman <span className="text-zinc-900 bg-zinc-100 px-2 py-1 rounded-md ml-1">{pageNumber}</span> / {TOTAL_PAGES}
+        {/* KAWASAN KANDUNGAN NOTA */}
+        <div className={`flex-1 overflow-y-auto w-full flex flex-col relative custom-scrollbar p-4 md:p-8 ${isDarkMode ? "bg-zinc-950" : "bg-[#f5f7fb]"}`}>
+          
+          {deletedPages.includes(pageNumber) ? (
+             <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <svg className={`w-20 h-20 mb-4 ${isDarkMode ? "text-zinc-800" : "text-zinc-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <h3 className={`text-2xl font-black ${isDarkMode ? "text-zinc-600" : "text-zinc-400"}`}>Muka Surat Dipadam</h3>
+                <p className={`mt-2 ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {pageNumber} tidak lagi tersedia dalam sistem.</p>
+                <button onClick={() => setPageNumber(p => p < TOTAL_PAGES ? p + 1 : p)} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold">Pergi Muka Surat Seterusnya</button>
+             </div>
+          ) : (
+            <>
+              <div className={`mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-2xl border p-4 md:p-5 shadow-sm gap-4 flex-shrink-0 ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
+                <div>
+                  <h2 className={`text-xl md:text-2xl font-black tracking-tight ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Nota Interaktif</h2>
+                  <p className={`mt-0.5 text-xs md:text-sm font-medium ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {pageNumber} daripada {TOTAL_PAGES}</p>
+                </div>
+                <div className={`inline-flex items-center rounded-xl border p-1 w-full sm:w-auto justify-center ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-zinc-50 border-zinc-200"}`}>
+                  <button onClick={() => setZoom((prev) => Math.max(prev - 0.1, 0.5))} className={`flex-1 sm:flex-none rounded-lg px-3 py-2 text-sm font-bold transition-all ${isDarkMode ? "text-zinc-300 hover:bg-zinc-700" : "text-zinc-600 hover:bg-white hover:shadow-sm"}`}>-</button>
+                  <button onClick={() => setZoom(1)} className={`flex-1 sm:flex-none rounded-lg px-4 py-2 text-sm font-bold border-x transition-all ${isDarkMode ? "text-zinc-300 border-zinc-700 hover:bg-zinc-700" : "text-zinc-600 border-zinc-200/50 hover:bg-white hover:shadow-sm"}`}>100%</button>
+                  <button onClick={() => setZoom((prev) => prev + 0.1)} className={`flex-1 sm:flex-none rounded-lg px-3 py-2 text-sm font-bold transition-all ${isDarkMode ? "text-zinc-300 hover:bg-zinc-700" : "text-zinc-600 hover:bg-white hover:shadow-sm"}`}>+</button>
+                </div>
               </div>
-              <button onClick={() => setPageNumber(p => p < TOTAL_PAGES ? p + 1 : p)} disabled={pageNumber === TOTAL_PAGES} className="flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl bg-blue-600 text-white font-bold text-xs md:text-sm hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-500/20">
-                Seterusnya <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </div>
-            
-            <div className="mt-8 text-center text-sm font-medium text-zinc-400">
-              page by <span className="text-zinc-700 font-bold">cikgugrafik</span> <span className="text-blue-500 font-black">{'</>'}</span>
-            </div>
-          </div>
+
+              <div className="flex-1 flex flex-col items-center pb-12">
+                <div className={`w-full overflow-x-auto rounded-2xl border shadow-xl custom-scrollbar flex justify-center mb-6 relative group ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
+                  <img
+                    src={`/pages/SISTEM BAHASA-${pageNumber}.webp`}
+                    alt={`Muka Surat ${pageNumber}`}
+                    style={{ width: `${100 * zoom}%`, minWidth: `${300 * zoom}px`, maxWidth: `${850 * zoom}px`, transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)", filter: isDarkMode ? "brightness(0.9) contrast(1.1)" : "none" }}
+                    className="h-auto block origin-top"
+                  />
+                </div>
+
+                <div className={`w-full max-w-3xl rounded-2xl p-3 md:p-4 border shadow-sm flex items-center justify-between ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
+                  <button onClick={() => setPageNumber(p => p > 1 ? p - 1 : p)} disabled={pageNumber === 1} className={`flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl font-bold text-xs md:text-sm disabled:opacity-50 transition-colors border ${isDarkMode ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700" : "bg-zinc-50 text-zinc-700 border-zinc-100 hover:bg-zinc-100"}`}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg> Sebelumnya
+                  </button>
+                  <div className={`text-xs md:text-sm font-semibold ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>
+                    Halaman <span className={`px-2 py-1 rounded-md ml-1 ${isDarkMode ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-900"}`}>{pageNumber}</span> / {TOTAL_PAGES}
+                  </div>
+                  <button onClick={() => setPageNumber(p => p < TOTAL_PAGES ? p + 1 : p)} disabled={pageNumber === TOTAL_PAGES} className="flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl bg-blue-600 text-white font-bold text-xs md:text-sm hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-500/20">
+                    Seterusnya <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+                
+                <div className={`mt-8 text-center text-sm font-medium ${isDarkMode ? "text-zinc-600" : "text-zinc-400"}`}>
+                  page by <span className={`font-bold ${isDarkMode ? "text-zinc-400" : "text-zinc-700"}`}>cikgugrafik</span> <span className="text-blue-500 font-black">{'</>'}</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* TETINGKAP CHAT AI */}
       {isAiChatOpen && (
-        <div className="fixed bottom-24 right-4 md:right-8 w-80 md:w-96 bg-white rounded-3xl shadow-2xl border border-zinc-200 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
+        <div className={`fixed bottom-24 right-4 md:right-8 w-80 md:w-96 rounded-3xl shadow-2xl border flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-8 fade-in duration-300 ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
           <div className="bg-gradient-to-r from-[#0f172a] to-[#1e293b] p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-xs shadow-inner">AI</div>
@@ -442,17 +501,17 @@ export default function Home() {
             </button>
           </div>
           
-          <div className="flex-1 p-4 h-64 overflow-y-auto bg-slate-50 space-y-4 text-sm custom-scrollbar">
+          <div className={`flex-1 p-4 h-64 overflow-y-auto space-y-4 text-sm custom-scrollbar ${isDarkMode ? "bg-zinc-950" : "bg-slate-50"}`}>
             {aiChatHistory.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${msg.role === "user" ? "bg-blue-600 text-white rounded-tr-sm" : "bg-white border border-zinc-200 text-zinc-800 rounded-tl-sm shadow-sm"}`}>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${msg.role === "user" ? "bg-blue-600 text-white rounded-tr-sm" : isDarkMode ? "bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-tl-sm shadow-sm" : "bg-white border border-zinc-200 text-zinc-800 rounded-tl-sm shadow-sm"}`}>
                   <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                 </div>
               </div>
             ))}
             {isAiLoading && (
               <div className="flex justify-start">
-                <div className="bg-white border border-zinc-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-1">
+                <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-1 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -462,15 +521,15 @@ export default function Home() {
             <div ref={chatEndRef} />
           </div>
 
-          <div className="p-3 bg-white border-t border-zinc-100">
-            <div className="flex items-center bg-zinc-100 rounded-full overflow-hidden pr-1 focus-within:ring-2 focus-within:ring-blue-500/20">
+          <div className={`p-3 border-t ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-100"}`}>
+            <div className={`flex items-center rounded-full overflow-hidden pr-1 focus-within:ring-2 focus-within:ring-blue-500/20 ${isDarkMode ? "bg-zinc-800" : "bg-zinc-100"}`}>
               <input
                 type="text"
                 value={aiInput}
                 onChange={(e) => setAiInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAiSearch()}
                 placeholder="Tanya sini..."
-                className="flex-1 bg-transparent px-4 py-2 text-sm outline-none font-medium text-zinc-700"
+                className={`flex-1 bg-transparent px-4 py-2 text-sm outline-none font-medium ${isDarkMode ? "text-zinc-200 placeholder:text-zinc-500" : "text-zinc-700 placeholder:text-zinc-400"}`}
               />
               <button onClick={handleAiSearch} disabled={isAiLoading || !aiInput.trim()} className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors m-1">
                 <svg className="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
@@ -483,16 +542,119 @@ export default function Home() {
       {/* BUTANG FLOATING AI */}
       <button
         onClick={() => setIsAiChatOpen(!isAiChatOpen)}
-        className="fixed bottom-6 right-4 md:right-8 z-50 bg-zinc-900 text-white h-14 w-14 rounded-full flex items-center justify-center shadow-2xl hover:bg-blue-600 hover:scale-105 transition-all duration-300 ring-4 ring-white"
+        className={`fixed bottom-6 right-4 md:right-8 z-40 text-white h-14 w-14 rounded-full flex items-center justify-center shadow-2xl hover:bg-blue-600 hover:scale-105 transition-all duration-300 ring-4 ${isDarkMode ? "bg-zinc-800 ring-zinc-900" : "bg-zinc-900 ring-white"}`}
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
         <span className="absolute -top-1 -right-1 flex h-4 w-4">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500 border-2 border-white"></span>
+          <span className={`relative inline-flex rounded-full h-4 w-4 bg-blue-500 border-2 ${isDarkMode ? "border-zinc-900" : "border-white"}`}></span>
         </span>
       </button>
+
+      {/* ADMIN MODAL OVERLAY */}
+      {isAdminModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${isDarkMode ? "bg-zinc-900 border border-zinc-800" : "bg-white"}`}>
+              <div className="p-6 border-b flex justify-between items-center bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+                <div>
+                  <h2 className="text-xl font-black">Tetapan Admin</h2>
+                  <p className="text-xs text-slate-400 mt-1">Sistem pengurusan kandungan (Client-side)</p>
+                </div>
+                <button onClick={() => setIsAdminModalOpen(false)} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              {!isAdminAuth ? (
+                <div className={`p-8 ${isDarkMode ? "bg-zinc-900" : "bg-white"}`}>
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    </div>
+                    <h3 className={`text-xl font-bold ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Akses Keselamatan</h3>
+                    <p className={`text-sm mt-2 ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Sila masukkan kata laluan untuk log masuk.</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className={`flex items-center rounded-xl border focus-within:ring-2 focus-within:ring-blue-500/20 overflow-hidden ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-zinc-50 border-zinc-200"}`}>
+                      <input 
+                        type={showAdminPass ? "text" : "password"} 
+                        value={adminPass}
+                        onChange={(e) => setAdminPass(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAdminLogin()}
+                        placeholder="Kata laluan..." 
+                        className={`w-full px-5 py-3.5 bg-transparent outline-none text-sm font-medium ${isDarkMode ? "text-white placeholder:text-zinc-500" : "text-zinc-800 placeholder:text-zinc-400"}`}
+                      />
+                      <button onClick={() => setShowAdminPass(!showAdminPass)} className={`px-4 text-sm font-bold ${isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-400 hover:text-zinc-700"}`}>
+                        {showAdminPass ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                    <button onClick={handleAdminLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-blue-500/30">
+                      Log Masuk
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className={`flex-1 overflow-y-auto p-6 ${isDarkMode ? "bg-zinc-900" : "bg-slate-50"}`}>
+                   <div className="space-y-6">
+                      
+                      {/* Upload Section */}
+                      <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
+                        <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Muat Naik Muka Surat Baru</h4>
+                        <p className={`text-xs mb-4 ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Format disokong: PNG, WEBP, JPG</p>
+                        <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ${isDarkMode ? "border-zinc-600 hover:bg-zinc-700/50" : "border-blue-200 bg-blue-50/50 hover:bg-blue-50"}`}>
+                           <input type="file" className="hidden" id="upload-page" onChange={() => alert('Berjaya dimuat naik! (Simulasi Client-Side)')} />
+                           <label htmlFor="upload-page" className="cursor-pointer">
+                              <svg className={`w-8 h-8 mx-auto mb-2 ${isDarkMode ? "text-zinc-400" : "text-blue-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                              <span className={`text-sm font-bold ${isDarkMode ? "text-zinc-300" : "text-blue-700"}`}>Klik untuk pilih fail</span>
+                           </label>
+                        </div>
+                      </div>
+
+                      {/* Manage Current Page Section */}
+                      <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
+                        <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Urus Muka Surat Semasa (M/S {pageNumber})</h4>
+                        <p className={`text-xs mb-4 ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Anda sedang melihat muka surat {pageNumber}.</p>
+                        <div className="flex gap-3">
+                          <button onClick={() => handleDeletePage(pageNumber)} className={`flex-1 py-2.5 rounded-xl border text-sm font-bold flex justify-center items-center gap-2 transition ${isDarkMode ? "bg-red-900/20 border-red-800/50 text-red-400 hover:bg-red-900/40" : "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"}`}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            Padam M/S {pageNumber}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Rest List of Deleted */}
+                      {deletedPages.length > 0 && (
+                        <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-yellow-900/20 border-yellow-800/50" : "bg-yellow-50 border-yellow-200"}`}>
+                          <h4 className={`text-sm font-bold flex items-center gap-2 ${isDarkMode ? "text-yellow-500" : "text-yellow-700"}`}>
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                            Muka Surat Dipadam:
+                          </h4>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                             {deletedPages.map(p => (
+                               <span key={p} className={`px-2 py-1 rounded text-xs font-bold ${isDarkMode ? "bg-yellow-900/50 text-yellow-200" : "bg-yellow-200 text-yellow-800"}`}>M/S {p}</span>
+                             ))}
+                          </div>
+                          <button onClick={() => setDeletedPages([])} className={`mt-3 text-xs font-bold underline ${isDarkMode ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}>Restore Semua</button>
+                        </div>
+                      )}
+
+                   </div>
+                </div>
+              )}
+
+              {isAdminAuth && (
+                 <div className={`p-4 border-t flex justify-end bg-zinc-50 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : ""}`}>
+                   <button onClick={handleAdminLogout} className={`px-5 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? "bg-zinc-700 text-white hover:bg-zinc-600" : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"}`}>
+                     Log Keluar Admin
+                   </button>
+                 </div>
+              )}
+           </div>
+        </div>
+      )}
 
     </div>
   );

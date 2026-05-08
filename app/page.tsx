@@ -153,10 +153,13 @@ export default function Home() {
 
           const userEmail = currentUser.email?.toLowerCase();
 
-          // Semak jika e-mel pembeli tersenarai (atau jika URL belum diisi utk test)
-          if (allowedEmails.includes(userEmail) || SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwSCOZJ-AjJVCBqEmfUPA1LDygqbg7Dg0ylfJMJs7l8qetL6JeRI1NTA8bRl1QOMiDl/exec"
-            setUser(currentUser);
-          } else {
+// Pastikan ada tanda kurungan tutup ) dan pembuka kurungan kerinting { di hujungnya
+
+if (allowedEmails.includes(userEmail) || SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwSCOZJ-AjJVCBqEmfUPA1LDygqbg7Dg0ylfJMJs7l8qetL6JeRI1NTA8bRl1QOMiDl/exec") {
+
+  setUser(currentUser);
+
+} else {
             signOut(auth);
             setUser(null);
             setAuthError("Akses Ditolak: E-mel ini tiada dalam rekod pembelian. Sila log masuk guna e-mel yang didaftarkan di OnPay.");

@@ -135,31 +135,28 @@ export default function Home() {
         setAuthError("");
         
         try {
-          // ⚠️ PENTING: GANTIKAN URL INI DENGAN URL APPS SCRIPT CIKGU
-          const SCRIPT_URL = "TUKAR_URL_APPS_SCRIPT_DI_SINI"; 
+          // URL API APP SCRIPT CIKGU (Dah dimasukkan dengan betul)
+          const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSCOZJ-AjJVCBqEmfUPA1LDygqbg7Dg0ylfJMJs7l8qetL6JeRI1NTA8bRl1QOMiDl/exec"; 
           
           let allowedEmails: string[] = [];
 
-          // Panggil Google Sheets untuk dapatkan senarai e-mel
-          // Jika SCRIPT_URL belum ditukar, kita guna fallback
-          if(SCRIPT_URL !== "TUKAR_URL_APPS_SCRIPT_DI_SINI") {
+          try {
              const response = await fetch(SCRIPT_URL);
              const data = await response.json();
              allowedEmails = data.emails || [];
+          } catch (fetchErr) {
+             console.error("Gagal mendapatkan data dari Google Sheets:", fetchErr);
           }
           
-          // E-mel cikgu/admin wajib dimasukkan manual di sini sebagai backup
-          allowedEmails.push("cikgugrafik@gmail.com", "admin@paan");
+          // E-mel cikgu/admin (Wajib lepas masuk)
+          allowedEmails.push("cikgugrafik@gmail.com", "admin@paan", "jazlantechnology@gmail.com");
 
-          const userEmail = currentUser.email?.toLowerCase();
+          const userEmail = currentUser.email?.toLowerCase() || "";
 
-// Pastikan ada tanda kurungan tutup ) dan pembuka kurungan kerinting { di hujungnya
-
-if (allowedEmails.includes(userEmail) || SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwSCOZJ-AjJVCBqEmfUPA1LDygqbg7Dg0ylfJMJs7l8qetL6JeRI1NTA8bRl1QOMiDl/exec") {
-
-  setUser(currentUser);
-
-} else {
+          // SEMAKAN E-MEL KETAT (Strict Allowlist)
+          if (allowedEmails.includes(userEmail)) {
+            setUser(currentUser);
+          } else {
             signOut(auth);
             setUser(null);
             setAuthError("Akses Ditolak: E-mel ini tiada dalam rekod pembelian. Sila log masuk guna e-mel yang didaftarkan di OnPay.");

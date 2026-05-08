@@ -90,7 +90,10 @@ const allPagesIndex = [
 ];
 
 export default function Home() {
+  // State Utama
   const [user, setUser] = useState<any>(null);
+  const [authError, setAuthError] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -105,8 +108,6 @@ export default function Home() {
   // Bookmark & Sejarah
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [lastRead, setLastRead] = useState<number | null>(null);
-
-  // Analitik Tempatan
   const [pageStats, setPageStats] = useState<Record<number, number>>({});
 
   // AI Chat
@@ -126,39 +127,70 @@ export default function Home() {
   const [deletedPages, setDeletedPages] = useState<number[]>([]);
   const [adminTab, setAdminTab] = useState<"urus" | "analitik">("urus");
 
-  // Inisialisasi Data dari LocalStorage
+  // Inisialisasi Auth & LocalStorage
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setIsCheckingAuth(true);
+        setAuthError("");
+        
+        try {
+          // ⚠️ PENTING: GANTIKAN URL INI DENGAN URL APPS SCRIPT CIKGU
+          const SCRIPT_URL = "TUKAR_URL_APPS_SCRIPT_DI_SINI"; 
+          
+          let allowedEmails: string[] = [];
+
+          // Panggil Google Sheets untuk dapatkan senarai e-mel
+          // Jika SCRIPT_URL belum ditukar, kita guna fallback
+          if(SCRIPT_URL !== "TUKAR_URL_APPS_SCRIPT_DI_SINI") {
+             const response = await fetch(SCRIPT_URL);
+             const data = await response.json();
+             allowedEmails = data.emails || [];
+          }
+          
+          // E-mel cikgu/admin wajib dimasukkan manual di sini sebagai backup
+          allowedEmails.push("cikgugrafik@gmail.com", "admin@paan");
+
+          const userEmail = currentUser.email?.toLowerCase();
+
+          // Semak jika e-mel pembeli tersenarai (atau jika URL belum diisi utk test)
+          if (allowedEmails.includes(userEmail) || SCRIPT_URL === "TUKAR_URL_APPS_SCRIPT_DI_SINI") {
+            setUser(currentUser);
+          } else {
+            signOut(auth);
+            setUser(null);
+            setAuthError("Akses Ditolak: E-mel ini tiada dalam rekod pembelian. Sila log masuk guna e-mel yang didaftarkan di OnPay.");
+          }
+        } catch (error) {
+          console.error("Ralat semakan e-mel:", error);
+          signOut(auth);
+          setUser(null);
+          setAuthError("Ralat pelayan. Gagal menyemak rekod pangkalan data. Sila cuba lagi.");
+        } finally {
+          setIsCheckingAuth(false);
+        }
+      } else {
+        setUser(null);
+      }
     });
     
-    // Load Admin Auth
     if (localStorage.getItem("isAdminAuth") === "true") setIsAdminAuth(true);
-    
-    // Load Bookmarks
     const savedBookmarks = localStorage.getItem("sb_bookmarks");
     if(savedBookmarks) setBookmarks(JSON.parse(savedBookmarks));
-
-    // Load Last Read
     const savedLastRead = localStorage.getItem("sb_lastRead");
     if(savedLastRead) setLastRead(parseInt(savedLastRead));
-
-    // Load Analitik
     const savedStats = localStorage.getItem("sb_pageStats");
     if(savedStats) setPageStats(JSON.parse(savedStats));
 
     return () => unsubscribe();
   }, []);
 
-  // Simpan Analitik & Terakhir Dibaca setiap kali page berubah
+  // Simpan Stats & Terakhir Dibaca
   useEffect(() => {
-    if(!user) return; // Rekod bila login shj
-
-    // Save Last Read
+    if(!user) return;
     localStorage.setItem("sb_lastRead", pageNumber.toString());
     setLastRead(pageNumber);
 
-    // Save View Stats
     setPageStats(prev => {
       const newStats = { ...prev, [pageNumber]: (prev[pageNumber] || 0) + 1 };
       localStorage.setItem("sb_pageStats", JSON.stringify(newStats));
@@ -166,7 +198,6 @@ export default function Home() {
     });
   }, [pageNumber, user]);
 
-  // Handle Bookmarks
   const toggleBookmark = () => {
     setBookmarks(prev => {
       const isBookmarked = prev.includes(pageNumber);
@@ -176,7 +207,6 @@ export default function Home() {
     });
   };
 
-  // Handle Search Local
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setSearchResults([]);
@@ -234,10 +264,8 @@ export default function Home() {
           messages: [
             {
               role: "system",
-              // PROMPT AI DIPERKETATKAN: Wajib rujuk senarai ini tanpa meneka.
               content: `Anda ialah Pembantu Carian untuk aplikasi "Sistem Bahasa". Tugas anda HANYA memberikan muka surat (ms) yang tepat. Jangan ajar maksud tatabahasa.
               Jika ejaan salah, perbetulkan dan beritahu muka suratnya.
-              
               Rujuk senarai indeks KETAT ini:
               Cover (ms 1), Hak Cipta (ms 2), Isi Kandungan (ms 3, 4)
               Kata Nama (ms 5), Am (ms 6), Khas (ms 8), Ganti Nama Diri (ms 9), Ganti Nama Tunjuk (ms 10)
@@ -279,7 +307,6 @@ export default function Home() {
     catch (error) { console.log(error); }
   };
 
-  // UI Login Form
   if (!user) {
     return (
       <div className={`min-h-screen ${isDarkMode ? "bg-zinc-950 text-white" : "bg-[#f5f7fb] text-zinc-800"} flex items-center justify-center p-4 md:p-6 ${poppins.className}`}>
@@ -302,9 +329,32 @@ export default function Home() {
                 <h2 className="text-3xl lg:text-5xl font-black tracking-tight text-center lg:text-left">Selamat Datang</h2>
                 <p className={`mt-3 lg:mt-4 leading-relaxed text-base lg:text-lg text-center lg:text-left ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Log masuk menggunakan akaun Google untuk mengakses sistem pembelajaran premium.</p>
               </div>
-              <button onClick={signInWithGoogle} className="group flex w-full items-center justify-center gap-4 rounded-2xl bg-blue-600 px-6 py-4 text-base lg:text-lg font-bold text-white hover:bg-blue-700 transition-all duration-300 shadow-lg">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-6 w-6 lg:h-7 lg:w-7 bg-white rounded-full p-1 group-hover:scale-110 transition-transform" alt="Google Logo" />
-                Log Masuk Google
+
+              {/* PAPARAN RALAT E-MEL */}
+              {authError && (
+                <div className="mb-6 w-full p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <p className="text-sm font-semibold text-red-700 leading-relaxed">{authError}</p>
+                </div>
+              )}
+
+              {/* BUTANG LOGIN */}
+              <button 
+                onClick={signInWithGoogle} 
+                disabled={isCheckingAuth}
+                className="group flex w-full items-center justify-center gap-4 rounded-2xl bg-blue-600 px-6 py-4 text-base lg:text-lg font-bold text-white hover:bg-blue-700 disabled:bg-blue-400 transition-all duration-300 shadow-lg"
+              >
+                {isCheckingAuth ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Menyemak rekod...
+                  </>
+                ) : (
+                  <>
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-6 w-6 lg:h-7 lg:w-7 bg-white rounded-full p-1 group-hover:scale-110 transition-transform" alt="Google Logo" />
+                    Log Masuk Google
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -329,7 +379,6 @@ export default function Home() {
     { title: "12. Antonim", pages: [108], subTopics: [] },
   ];
 
-  // Logic untuk Top 5 Analitik
   const getTopPages = () => {
     return Object.entries(pageStats)
       .sort(([, a], [, b]) => b - a)
@@ -384,7 +433,6 @@ export default function Home() {
                 />
               </div>
               
-              {/* BUTANG QUICK RESUME DI NAVBAR (Desktop) */}
               {lastRead !== null && lastRead !== pageNumber && (
                 <button onClick={() => setPageNumber(lastRead)} className={`hidden md:flex items-center gap-2 px-4 rounded-full font-bold text-sm border shadow-sm transition-all whitespace-nowrap ${isDarkMode ? "bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-blue-400" : "bg-white border-zinc-200 hover:bg-zinc-50 text-blue-600"}`}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -445,11 +493,10 @@ export default function Home() {
 
           <div className="space-y-1 flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
             
-            {/* Bahagian Penanda Buku (Bookmarks) */}
             {bookmarks.length > 0 && (
               <div className={`mb-6 p-4 rounded-2xl border ${isDarkMode ? "bg-yellow-900/10 border-yellow-900/50" : "bg-yellow-50 border-yellow-100"}`}>
                 <h3 className={`text-sm font-bold flex items-center gap-2 mb-3 ${isDarkMode ? "text-yellow-500" : "text-yellow-600"}`}>
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
                   Penanda Buku
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -519,7 +566,6 @@ export default function Home() {
         {/* KAWASAN KANDUNGAN NOTA */}
         <div className={`flex-1 overflow-y-auto w-full flex flex-col relative custom-scrollbar p-4 md:p-8 ${isDarkMode ? "bg-zinc-950" : "bg-[#f5f7fb]"}`}>
           
-          {/* Butang Resum Mobile Sahaja (Floating Top) */}
           {lastRead !== null && lastRead !== pageNumber && (
             <button onClick={() => setPageNumber(lastRead)} className={`md:hidden mb-4 flex w-full items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border shadow-sm transition-all ${isDarkMode ? "bg-zinc-800 border-zinc-700 text-blue-400" : "bg-white border-blue-100 text-blue-600"}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -542,7 +588,6 @@ export default function Home() {
                     <h2 className={`text-xl md:text-2xl font-black tracking-tight ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Nota Interaktif</h2>
                     <p className={`mt-0.5 text-xs md:text-sm font-medium ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {pageNumber} daripada {TOTAL_PAGES}</p>
                   </div>
-                  {/* Butang Bintang Bookmark */}
                   <button onClick={toggleBookmark} className={`p-2 rounded-full transition-all ${bookmarks.includes(pageNumber) ? "bg-yellow-100 text-yellow-500 hover:bg-yellow-200" : isDarkMode ? "bg-zinc-800 text-zinc-500 hover:text-yellow-500" : "bg-zinc-50 text-zinc-300 hover:text-yellow-500"}`}>
                     <svg className="w-7 h-7" fill={bookmarks.includes(pageNumber) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
                   </button>
@@ -699,15 +744,12 @@ export default function Home() {
                 </div>
               ) : (
                 <div className={`flex-1 flex flex-col overflow-hidden ${isDarkMode ? "bg-zinc-900" : "bg-slate-50"}`}>
-                   
-                   {/* Admin Tabs */}
                    <div className={`flex border-b px-6 pt-4 gap-6 ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"}`}>
                      <button onClick={() => setAdminTab("urus")} className={`pb-3 text-sm font-bold border-b-2 transition-colors ${adminTab === "urus" ? "border-blue-600 text-blue-600" : "border-transparent text-zinc-500 hover:text-zinc-700"}`}>Pengurusan M/S</button>
                      <button onClick={() => setAdminTab("analitik")} className={`pb-3 text-sm font-bold border-b-2 transition-colors ${adminTab === "analitik" ? "border-blue-600 text-blue-600" : "border-transparent text-zinc-500 hover:text-zinc-700"}`}>Analitik Penggunaan</button>
                    </div>
 
                    <div className="flex-1 overflow-y-auto p-6">
-                      
                       {adminTab === "urus" && (
                         <div className="space-y-6">
                           <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
@@ -788,7 +830,7 @@ export default function Home() {
                       )}
                    </div>
 
-                   <div className={`p-4 border-t flex justify-end ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "bg-white border-zinc-200"}`}>
+                   <div className={`p-4 border-t flex justify-end ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
                      <button onClick={handleAdminLogout} className={`px-5 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? "bg-zinc-700 text-white hover:bg-zinc-600" : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"}`}>
                        Log Keluar Admin
                      </button>
@@ -798,7 +840,6 @@ export default function Home() {
            </div>
         </div>
       )}
-
     </div>
   );
 }

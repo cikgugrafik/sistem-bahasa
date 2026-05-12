@@ -10,16 +10,20 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
+});
 
 const ModernLogo = ({ className = "" }: { className?: string }) => (
   <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-md shadow-blue-500/30 ${className}`}>
-    <svg className="w-[55%] h-[55%] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+    <svg className="w-[55%] h-[55%] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
   </div>
 );
 
-// 🚀 OPTIMIZATION 1: Pindahkan Data Berat ke Luar Function
-// Supaya sistem tak perlu render semula beribu baris array setiap kali pengguna selak muka surat
+// 🚀 FUNGSI PAPARAN: Fail 1-4 (i-iv), Fail 5-112 (1-108)
 const getDisplayPage = (actualPage: number) => {
   if (actualPage === 1) return "i";
   if (actualPage === 2) return "ii";
@@ -92,6 +96,7 @@ const allPagesIndex = [
   { title: "Polisemi", page: 99, type: "Tajuk Utama" },
   { title: "Sinonim", page: 104, type: "Tajuk Utama" },
   { title: "Antonim", page: 108, type: "Tajuk Utama" },
+  { title: "Penutup & Latihan", page: 112, type: "Lain-lain" },
 ];
 
 const sidebarContents = [
@@ -107,10 +112,11 @@ const sidebarContents = [
   { title: "9. Penjodoh Bilangan", pages: [93, 94, 95, 96, 97, 98], subTopics: [] },
   { title: "10. Polisemi", pages: [99, 100, 101, 102, 103], subTopics: [] },
   { title: "11. Sinonim", pages: [104, 105, 106, 107], subTopics: [] },
-  { title: "12. Antonim", pages: [108], subTopics: [] },
+  { title: "12. Antonim", pages: [108, 109, 110, 111, 112], subTopics: [] },
 ];
 
 export default function Home() {
+  // State Utama
   const [user, setUser] = useState<any>(null);
   const [authError, setAuthError] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
@@ -119,19 +125,23 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   
- // 🚀 FIX: Benarkan sistem selak sampai fail gambar yang ke-112
-  const TOTAL_PAGES = 112;
+  // 🚀 FIX: TOTAL_PAGES disetkan kepada 112 supaya sistem baca fail sampai hujung
+  const TOTAL_PAGES = 112; 
 
+  // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
+  // Fungsi Lain-lain
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof allPagesIndex>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [lastRead, setLastRead] = useState<number | null>(null);
   const [pageStats, setPageStats] = useState<Record<number, number>>({});
+  
+  // AI Chat
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [aiChatHistory, setAiChatHistory] = useState<{ role: string; text: string }[]>([
@@ -139,6 +149,8 @@ export default function Home() {
   ]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Admin
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
   const [adminPass, setAdminPass] = useState("");
@@ -146,6 +158,7 @@ export default function Home() {
   const [deletedPages, setDeletedPages] = useState<number[]>([]);
   const [adminTab, setAdminTab] = useState<"urus" | "analitik">("urus");
 
+  // Semakan Sistem PWA
   useEffect(() => {
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
@@ -174,14 +187,15 @@ export default function Home() {
     }
   };
 
-  // 🚀 OPTIMIZATION 2: Kurangkan Preload Jadi 1 Gambar (Elak memory leak & Lag)
+  // Preload Imej Seterusnya
   useEffect(() => {
     if (pageNumber < TOTAL_PAGES) {
-      const img1 = new Image(); 
-      img1.src = `/pages/SISTEM BAHASA-${pageNumber + 1}.webp`;
+      const img = new Image(); 
+      img.src = `/pages/SISTEM BAHASA-${pageNumber + 1}.webp`;
     }
   }, [pageNumber]);
 
+  // Firebase Auth & Google Sheets Check
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -194,10 +208,13 @@ export default function Home() {
              const response = await fetch(SCRIPT_URL);
              const data = await response.json();
              allowedEmails = data.emails || [];
-          } catch (fetchErr) { console.error("Gagal mendapatkan data:", fetchErr); }
+          } catch (fetchErr) {
+             console.error("Gagal mendapatkan data:", fetchErr);
+          }
           
           allowedEmails.push("cikgugrafik@gmail.com", "admin@paan", "jazlantechnology@gmail.com");
           const userEmail = currentUser.email?.toLowerCase() || "";
+
           if (allowedEmails.includes(userEmail)) {
             setUser(currentUser);
           } else {
@@ -206,6 +223,7 @@ export default function Home() {
             setAuthError("Akses Ditolak: E-mel ini tiada dalam rekod pembelian. Sila log masuk guna e-mel yang didaftarkan di OnPay.");
           }
         } catch (error) {
+          console.error("Ralat semakan e-mel:", error);
           signOut(auth);
           setUser(null);
           setAuthError("Ralat pelayan. Gagal menyemak rekod pangkalan data. Sila cuba lagi.");
@@ -228,10 +246,12 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
+  // Simpan Terakhir Baca
   useEffect(() => {
     if(!user) return;
     localStorage.setItem("sb_lastRead", pageNumber.toString());
     setLastRead(pageNumber);
+
     setPageStats(prev => {
       const newStats = { ...prev, [pageNumber]: (prev[pageNumber] || 0) + 1 };
       localStorage.setItem("sb_pageStats", JSON.stringify(newStats));
@@ -248,6 +268,7 @@ export default function Home() {
     });
   };
 
+  // Carian
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setSearchResults([]);
@@ -265,11 +286,14 @@ export default function Home() {
     setShowDropdown(false);
   };
 
+  // Admin Logik
   const handleAdminLogin = () => {
     if (adminPass === "admin@paan") {
       setIsAdminAuth(true);
       localStorage.setItem("isAdminAuth", "true");
-    } else { alert("Kata laluan tidak sah!"); }
+    } else {
+      alert("Kata laluan tidak sah!");
+    }
   };
 
   const handleAdminLogout = () => {
@@ -284,6 +308,7 @@ export default function Home() {
     }
   };
 
+  // AI Carian
   const handleAiSearch = async () => {
     if (!aiInput.trim()) return;
     const userQuery = aiInput;
@@ -294,13 +319,18 @@ export default function Home() {
     try {
       const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer sk-aeab062d29744d0588ba1dcb7d0f2aea` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer sk-aeab062d29744d0588ba1dcb7d0f2aea`,
+        },
         body: JSON.stringify({
           model: "deepseek-chat",
           messages: [
             {
               role: "system",
-              content: `Anda ialah Pembantu Carian untuk aplikasi "Sistem Bahasa". Tugas anda HANYA memberikan muka surat (ms) yang tepat. Jangan ajar maksud tatabahasa. Rujuk senarai indeks KETAT ini:
+              content: `Anda ialah Pembantu Carian untuk aplikasi "Sistem Bahasa". Tugas anda HANYA memberikan muka surat (ms) yang tepat. Jangan ajar maksud tatabahasa.
+              Jika ejaan salah, perbetulkan dan beritahu muka suratnya.
+              Rujuk senarai indeks KETAT ini (mengikut format paparan roman dan nombor):
               Cover (ms i), Hak Cipta (ms ii), Isi Kandungan (ms iii, iv)
               Kata Nama (ms 1), Am (ms 2), Khas (ms 4), Ganti Nama Diri (ms 5), Ganti Nama Tunjuk (ms 6)
               Kata Kerja (ms 7), Transitif (ms 8), Tak Transitif (ms 10)
@@ -311,7 +341,9 @@ export default function Home() {
               Bina Ayat (ms 50), Jenis (ms 52), Aktif/Pasif (ms 57), Songsang (ms 60), Majmuk (ms 61), Cakap Ajuk/Pindah (ms 62), Penanda Wacana (ms 63)
               Peribahasa (ms 64), Simpulan Bahasa (ms 66), Perumpamaan (ms 70), Pepatah (ms 77), Bidalan (ms 80), Kiasan (ms 85), Hikmat (ms 88)
               Penjodoh Bilangan (ms 89)
-              Polisemi (ms 95), Sinonim (ms 100), Antonim (ms 104)`
+              Polisemi (ms 95), Sinonim (ms 100), Antonim (ms 104)
+
+              Contoh jawapan: "Tajuk Kata Ganda Berentak terdapat di muka surat 43."`
             },
             { role: "user", content: userQuery },
           ],
@@ -324,14 +356,19 @@ export default function Home() {
       }
     } catch (error) {
       setAiChatHistory((prev) => [...prev, { role: "ai", text: "Maaf, ralat sistem AI." }]);
-    } finally { setIsAiLoading(false); }
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [aiChatHistory]);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [aiChatHistory]);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    try { await signInWithPopup(auth, provider); } catch (error) { console.log(error); }
+    try { await signInWithPopup(auth, provider); } 
+    catch (error) { console.log(error); }
   };
 
   const getTopPages = () => {
@@ -339,20 +376,25 @@ export default function Home() {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([page, count]) => ({
-        page: parseInt(page), count,
+        page: parseInt(page),
+        count,
         title: allPagesIndex.find(p => p.page === parseInt(page))?.title || `M/S ${getDisplayPage(parseInt(page))}`
       }));
   };
 
+  // Paparan Login (Landing Page)
   if (!user) {
     return (
       <div className={`min-h-screen relative flex items-center justify-center p-4 sm:p-6 ${poppins.className} ${isDarkMode ? "bg-zinc-950" : "bg-[#f1f5f9]"}`}>
+        
+        {/* KESAN CAHAYA LATAR BELAKANG */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 -left-20 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl"></div>
         </div>
 
         <div className={`w-full max-w-6xl relative z-10 overflow-hidden rounded-[30px] md:rounded-[40px] ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-100"} shadow-2xl grid lg:grid-cols-2 border animate-in fade-in zoom-in-95 duration-500`}>
+          
           <div className="flex flex-col justify-center bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] p-10 sm:p-12 lg:p-16 text-white relative overflow-hidden text-center lg:text-left">
             <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/30 blur-3xl"></div>
             <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl"></div>
@@ -421,6 +463,7 @@ export default function Home() {
     );
   }
 
+  // Paparan Aplikasi Utama (Lepas Login)
   return (
     <div className={`h-[100dvh] overflow-hidden ${isDarkMode ? "bg-zinc-950 text-white dark" : "bg-[#f8fafc] text-zinc-800"} ${poppins.className} flex flex-col relative transition-colors duration-300`}>
       
@@ -438,7 +481,7 @@ export default function Home() {
                <div className={`p-4 rounded-2xl text-left border mb-4 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-blue-50 border-blue-100"}`}>
                  <p className={`text-xs font-bold ${isDarkMode ? "text-zinc-300" : "text-blue-800"}`}>Untuk Pengguna iPhone/iPad:</p>
                  <ol className={`text-xs mt-2 ml-4 list-decimal ${isDarkMode ? "text-zinc-400" : "text-blue-700"}`}>
-                   <li>Tekan ikon <strong>Share</strong> (petak berserta anak panah) di bawah browser Safari.</li>
+                   <li>Tekan ikon <strong>Share</strong> (petak berserta anak panah).</li>
                    <li className="mt-1">Pilih <strong>"Add to Home Screen"</strong>.</li>
                  </ol>
                </div>
@@ -535,7 +578,7 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden relative">
         {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />}
 
-        {/* SIDEBAR */}
+        {/* SIDEBAR SCROLL BEBAS */}
         <div className={`absolute md:relative z-40 h-full w-[280px] md:w-[320px] border-r flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 shadow-2xl md:shadow-none"} ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
           <div className={`flex items-center justify-between p-5 border-b ${isDarkMode ? "border-zinc-800" : "border-zinc-100"}`}>
             <h2 className={`text-lg font-black uppercase tracking-wide ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Kandungan</h2>
@@ -560,7 +603,7 @@ export default function Home() {
                 <div className="flex flex-wrap gap-2">
                   {bookmarks.map(b => (
                     <button key={b} onClick={() => { setPageNumber(b); setIsSidebarOpen(false); }} className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${pageNumber === b ? "bg-yellow-400 text-yellow-900" : isDarkMode ? "bg-zinc-800 text-yellow-500 hover:bg-zinc-700" : "bg-white text-yellow-600 hover:bg-yellow-100"}`}>
-                      M/S {getDisplayPage(b)}
+                      ms {getDisplayPage(b)}
                     </button>
                   ))}
                 </div>
@@ -656,7 +699,6 @@ export default function Home() {
 
               <div className="flex-1 flex flex-col items-center pb-12">
                 <div className={`w-full overflow-x-auto rounded-2xl border shadow-xl custom-scrollbar flex justify-center mb-6 relative group ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
-                  {/* 🚀 OPTIMIZATION 3: Async Decoding & Hardware Acceleration */}
                   <img
                     src={`/pages/SISTEM BAHASA-${pageNumber}.webp`}
                     alt={`Muka Surat ${getDisplayPage(pageNumber)}`}
@@ -668,14 +710,14 @@ export default function Home() {
                       maxWidth: `${850 * zoom}px`, 
                       transition: "width 0.2s ease-out", 
                       filter: isDarkMode ? "brightness(0.9) contrast(1.1)" : "none",
-                      willChange: "width" // Arahkan GPU komputer tolong lukis animasi zoom supaya tak lag
+                      willChange: "width" 
                     }}
-                    className="h-auto block origin-top"
+                    className="h-auto block origin-top shadow-inner"
                   />
                 </div>
 
                 <div className={`w-full max-w-3xl rounded-2xl p-3 md:p-4 border shadow-sm flex items-center justify-between ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
-                  <button onClick={() => setPageNumber(p => p > 1 ? p - 1 : p)} disabled={pageNumber === 1} className={`flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl font-bold text-xs md:text-sm disabled:opacity-50 transition-colors border ${isDarkMode ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700" : "bg-zinc-50 text-zinc-700 border-zinc-100 hover:bg-zinc-100"}`}>
+                  <button onClick={() => setPageNumber(p => p > 1 ? p - 1 : p)} disabled={pageNumber === 1} className={`flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl font-bold text-xs md:text-sm disabled:opacity-50 transition-colors border ${isDarkMode ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700" : "bg-zinc-50 text-zinc-700 border-zinc-100 hover:bg-zinc-100 shadow-sm"}`}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg> Sebelumnya
                   </button>
                   <div className={`text-xs md:text-sm font-semibold ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>

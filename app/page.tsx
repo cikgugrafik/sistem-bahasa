@@ -18,6 +18,8 @@ const ModernLogo = ({ className = "" }: { className?: string }) => (
   </div>
 );
 
+// 🚀 OPTIMIZATION 1: Pindahkan Data Berat ke Luar Function
+// Supaya sistem tak perlu render semula beribu baris array setiap kali pengguna selak muka surat
 const getDisplayPage = (actualPage: number) => {
   if (actualPage === 1) return "i";
   if (actualPage === 2) return "ii";
@@ -92,6 +94,22 @@ const allPagesIndex = [
   { title: "Antonim", page: 108, type: "Tajuk Utama" },
 ];
 
+const sidebarContents = [
+  { title: "Mukadimah", pages: [1], subTopics: [{ title: "Cover Depan", pages: [1] }, { title: "Nota Hak Cipta", pages: [2] }, { title: "Isi Kandungan", pages: [3, 4] }] },
+  { title: "1. Kata Nama", pages: [5], subTopics: [{ title: "Kata Nama Am", pages: [6, 7] }, { title: "Kata Nama Khas", pages: [8] }, { title: "Kata Ganti Nama Diri", pages: [9] }, { title: "Kata Ganti Nama Diri Tunjuk", pages: [10] }] },
+  { title: "2. Kata Kerja", pages: [11], subTopics: [{ title: "Kata Kerja Transitif", pages: [12, 13] }, { title: "Kata Kerja Tak Transitif", pages: [14] }] },
+  { title: "3. Kata Adjektif", pages: [15, 16], subTopics: [{ title: "Kata Adjektif Sifat", pages: [17] }, { title: "Kata Adjektif Perasaan", pages: [18] }, { title: "Kata Adjektif Ukuran", pages: [19] }, { title: "Kata Adjektif Warna", pages: [20] }, { title: "Kata Adjektif Jarak", pages: [21] }, { title: "Kata Adjektif Cara", pages: [22] }, { title: "Kata Adjektif Waktu", pages: [23] }, { title: "Kata Adjektif Bentuk", pages: [24] }, { title: "Kata Adjektif Pancaindera", pages: [25] }] },
+  { title: "4. Kata Tugas", pages: [26], subTopics: [{ title: "Kata Hubung", pages: [27, 28, 29] }, { title: "Kata Pembenar", pages: [30] }, { title: "Kata Nafi", pages: [31] }, { title: "Kata Seru", pages: [32] }, { title: "Kata Perintah", pages: [33] }, { title: "Kata Bantu", pages: [34] }, { title: "Kata Bilangan", pages: [35] }, { title: "Kata Arah", pages: [36] }, { title: "Kata Sendi Nama", pages: [37] }, { title: "Kata Pemeri", pages: [38] }, { title: "Kata Penguat", pages: [39] }, { title: "Kata Adverba", pages: [40] }, { title: "Kata Penegas", pages: [41] }, { title: "Kata Pangkal Ayat", pages: [42] }] },
+  { title: "5. Kata Ganda", pages: [43, 44], subTopics: [{ title: "Kata Ganda Penuh", pages: [45] }, { title: "Kata Ganda Separa", pages: [46] }, { title: "Kata Ganda Berentak", pages: [47] }] },
+  { title: "6. Kata Berimbuhan", pages: [48, 49], subTopics: [{ title: "Imbuhan Awalan", pages: [50] }, { title: "Imbuhan Akhiran", pages: [51] }, { title: "Imbuhan Apitan", pages: [52] }, { title: "Imbuhan Sisipan", pages: [53] }] },
+  { title: "7. Pembentukan Ayat", pages: [54, 55], subTopics: [{ title: "Jenis Ayat", pages: [56, 57, 58, 59, 60] }, { title: "Ragam Ayat", pages: [61, 62, 63] }, { title: "Susunan Ayat", pages: [64] }, { title: "Ayat Majmuk", pages: [65] }, { title: "Cakap Ajuk/Pindah", pages: [66] }, { title: "Penanda Wacana", pages: [67] }] },
+  { title: "8. Peribahasa", pages: [68, 69], subTopics: [{ title: "Simpulan Bahasa", pages: [70, 71, 72, 73] }, { title: "Perumpamaan", pages: [74, 75, 76, 77, 78, 79, 80] }, { title: "Pepatah", pages: [81, 82, 83] }, { title: "Bidalan", pages: [84, 85, 86, 87, 88] }, { title: "Kiasan", pages: [89, 90, 91] }, { title: "Kata Hikmat", pages: [92] }] },
+  { title: "9. Penjodoh Bilangan", pages: [93, 94, 95, 96, 97, 98], subTopics: [] },
+  { title: "10. Polisemi", pages: [99, 100, 101, 102, 103], subTopics: [] },
+  { title: "11. Sinonim", pages: [104, 105, 106, 107], subTopics: [] },
+  { title: "12. Antonim", pages: [108], subTopics: [] },
+];
+
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [authError, setAuthError] = useState("");
@@ -100,9 +118,10 @@ export default function Home() {
   const [zoom, setZoom] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const TOTAL_PAGES = 108;
+  
+  // 🚀 FIX: Tukar Total Pages kepada 112 (108 muka surat isi + 4 roman)
+  const TOTAL_PAGES = 112; 
 
-  // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -127,20 +146,16 @@ export default function Home() {
   const [deletedPages, setDeletedPages] = useState<number[]>([]);
   const [adminTab, setAdminTab] = useState<"urus" | "analitik">("urus");
 
-  // PWA Install Logic
   useEffect(() => {
-    // Check if iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone;
     
     if (isIosDevice && !isStandalone) {
       setIsIOS(true);
-      // Popup tunjuk automatik selepas 5 saat kalau dia buka di Safari
       setTimeout(() => setShowInstallModal(true), 5000);
     }
 
-    // Capture install prompt for Android/PC
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -159,13 +174,11 @@ export default function Home() {
     }
   };
 
-  // PRELOAD NEXT IMAGES (Trick Speed)
+  // 🚀 OPTIMIZATION 2: Kurangkan Preload Jadi 1 Gambar (Elak memory leak & Lag)
   useEffect(() => {
     if (pageNumber < TOTAL_PAGES) {
-      const img1 = new Image(); img1.src = `/pages/SISTEM BAHASA-${pageNumber + 1}.webp`;
-      if (pageNumber + 1 < TOTAL_PAGES) {
-        const img2 = new Image(); img2.src = `/pages/SISTEM BAHASA-${pageNumber + 2}.webp`;
-      }
+      const img1 = new Image(); 
+      img1.src = `/pages/SISTEM BAHASA-${pageNumber + 1}.webp`;
     }
   }, [pageNumber]);
 
@@ -331,41 +344,20 @@ export default function Home() {
       }));
   };
 
-  const sidebarContents = [
-    { title: "Mukadimah", pages: [1], subTopics: [{ title: "Cover Depan", pages: [1] }, { title: "Nota Hak Cipta", pages: [2] }, { title: "Isi Kandungan", pages: [3, 4] }] },
-    { title: "1. Kata Nama", pages: [5], subTopics: [{ title: "Kata Nama Am", pages: [6, 7] }, { title: "Kata Nama Khas", pages: [8] }, { title: "Kata Ganti Nama Diri", pages: [9] }, { title: "Kata Ganti Nama Diri Tunjuk", pages: [10] }] },
-    { title: "2. Kata Kerja", pages: [11], subTopics: [{ title: "Kata Kerja Transitif", pages: [12, 13] }, { title: "Kata Kerja Tak Transitif", pages: [14] }] },
-    { title: "3. Kata Adjektif", pages: [15, 16], subTopics: [{ title: "Kata Adjektif Sifat", pages: [17] }, { title: "Kata Adjektif Perasaan", pages: [18] }, { title: "Kata Adjektif Ukuran", pages: [19] }, { title: "Kata Adjektif Warna", pages: [20] }, { title: "Kata Adjektif Jarak", pages: [21] }, { title: "Kata Adjektif Cara", pages: [22] }, { title: "Kata Adjektif Waktu", pages: [23] }, { title: "Kata Adjektif Bentuk", pages: [24] }, { title: "Kata Adjektif Pancaindera", pages: [25] }] },
-    { title: "4. Kata Tugas", pages: [26], subTopics: [{ title: "Kata Hubung", pages: [27, 28, 29] }, { title: "Kata Pembenar", pages: [30] }, { title: "Kata Nafi", pages: [31] }, { title: "Kata Seru", pages: [32] }, { title: "Kata Perintah", pages: [33] }, { title: "Kata Bantu", pages: [34] }, { title: "Kata Bilangan", pages: [35] }, { title: "Kata Arah", pages: [36] }, { title: "Kata Sendi Nama", pages: [37] }, { title: "Kata Pemeri", pages: [38] }, { title: "Kata Penguat", pages: [39] }, { title: "Kata Adverba", pages: [40] }, { title: "Kata Penegas", pages: [41] }, { title: "Kata Pangkal Ayat", pages: [42] }] },
-    { title: "5. Kata Ganda", pages: [43, 44], subTopics: [{ title: "Kata Ganda Penuh", pages: [45] }, { title: "Kata Ganda Separa", pages: [46] }, { title: "Kata Ganda Berentak", pages: [47] }] },
-    { title: "6. Kata Berimbuhan", pages: [48, 49], subTopics: [{ title: "Imbuhan Awalan", pages: [50] }, { title: "Imbuhan Akhiran", pages: [51] }, { title: "Imbuhan Apitan", pages: [52] }, { title: "Imbuhan Sisipan", pages: [53] }] },
-    { title: "7. Pembentukan Ayat", pages: [54, 55], subTopics: [{ title: "Jenis Ayat", pages: [56, 57, 58, 59, 60] }, { title: "Ragam Ayat", pages: [61, 62, 63] }, { title: "Susunan Ayat", pages: [64] }, { title: "Ayat Majmuk", pages: [65] }, { title: "Cakap Ajuk/Pindah", pages: [66] }, { title: "Penanda Wacana", pages: [67] }] },
-    { title: "8. Peribahasa", pages: [68, 69], subTopics: [{ title: "Simpulan Bahasa", pages: [70, 71, 72, 73] }, { title: "Perumpamaan", pages: [74, 75, 76, 77, 78, 79, 80] }, { title: "Pepatah", pages: [81, 82, 83] }, { title: "Bidalan", pages: [84, 85, 86, 87, 88] }, { title: "Kiasan", pages: [89, 90, 91] }, { title: "Kata Hikmat", pages: [92] }] },
-    { title: "9. Penjodoh Bilangan", pages: [93, 94, 95, 96, 97, 98], subTopics: [] },
-    { title: "10. Polisemi", pages: [99, 100, 101, 102, 103], subTopics: [] },
-    { title: "11. Sinonim", pages: [104, 105, 106, 107], subTopics: [] },
-    { title: "12. Antonim", pages: [108], subTopics: [] },
-  ];
-
   if (!user) {
     return (
       <div className={`min-h-screen relative flex items-center justify-center p-4 sm:p-6 ${poppins.className} ${isDarkMode ? "bg-zinc-950" : "bg-[#f1f5f9]"}`}>
-        
-        {/* KESAN CAHAYA LATAR BELAKANG (GLOWING ORBS) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 -left-20 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl"></div>
         </div>
 
         <div className={`w-full max-w-6xl relative z-10 overflow-hidden rounded-[30px] md:rounded-[40px] ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-100"} shadow-2xl grid lg:grid-cols-2 border animate-in fade-in zoom-in-95 duration-500`}>
-          
-          {/* BAHAGIAN KIRI / ATAS: HERO SECTION (Sekarang terpapar di mobile!) */}
           <div className="flex flex-col justify-center bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] p-10 sm:p-12 lg:p-16 text-white relative overflow-hidden text-center lg:text-left">
             <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/30 blur-3xl"></div>
             <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl"></div>
             
             <div className="relative z-10 flex flex-col items-center lg:items-start">
-              {/* Logo Khas Mobile */}
               <div className="lg:hidden mb-6">
                 <ModernLogo className="h-16 w-16 shadow-lg shadow-blue-500/50" />
               </div>
@@ -386,7 +378,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* BAHAGIAN KANAN / BAWAH: BORANG LOGIN */}
           <div className={`flex items-center justify-center p-8 sm:p-10 lg:p-20 ${isDarkMode ? "bg-zinc-900" : "bg-white"}`}>
             <div className="w-full max-w-md text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-8 lg:mb-10 w-full">
@@ -394,7 +385,6 @@ export default function Home() {
                 <p className={`mt-2 lg:mt-4 leading-relaxed text-sm sm:text-base lg:text-lg font-medium ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Gunakan e-mel yang didaftarkan di OnPay.</p>
               </div>
 
-              {/* PAPARAN RALAT E-MEL */}
               {authError && (
                 <div className="mb-6 w-full p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                   <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -402,7 +392,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* BUTANG LOGIN GOOGLE */}
               <button 
                 onClick={signInWithGoogle} 
                 disabled={isCheckingAuth}
@@ -667,10 +656,20 @@ export default function Home() {
 
               <div className="flex-1 flex flex-col items-center pb-12">
                 <div className={`w-full overflow-x-auto rounded-2xl border shadow-xl custom-scrollbar flex justify-center mb-6 relative group ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
+                  {/* 🚀 OPTIMIZATION 3: Async Decoding & Hardware Acceleration */}
                   <img
                     src={`/pages/SISTEM BAHASA-${pageNumber}.webp`}
                     alt={`Muka Surat ${getDisplayPage(pageNumber)}`}
-                    style={{ width: `${100 * zoom}%`, minWidth: `${300 * zoom}px`, maxWidth: `${850 * zoom}px`, transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)", filter: isDarkMode ? "brightness(0.9) contrast(1.1)" : "none" }}
+                    decoding="async"
+                    loading="eager"
+                    style={{ 
+                      width: `${100 * zoom}%`, 
+                      minWidth: `${300 * zoom}px`, 
+                      maxWidth: `${850 * zoom}px`, 
+                      transition: "width 0.2s ease-out", 
+                      filter: isDarkMode ? "brightness(0.9) contrast(1.1)" : "none",
+                      willChange: "width" // Arahkan GPU komputer tolong lukis animasi zoom supaya tak lag
+                    }}
                     className="h-auto block origin-top"
                   />
                 </div>

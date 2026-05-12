@@ -349,53 +349,84 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className={`min-h-screen ${isDarkMode ? "bg-zinc-950 text-white" : "bg-[#f5f7fb] text-zinc-800"} flex items-center justify-center p-4 md:p-6 ${poppins.className}`}>
-        <div className={`w-full max-w-6xl overflow-hidden rounded-[30px] md:rounded-[40px] ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-100"} shadow-2xl grid lg:grid-cols-2 border`}>
-           <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] p-12 lg:p-16 text-white relative overflow-hidden">
-            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl"></div>
-            <div className="relative z-10">
-              <div className="mb-8 inline-flex items-center gap-3 rounded-full bg-white/10 px-5 py-2 text-sm backdrop-blur-md border border-white/10 font-medium tracking-wide">
-                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Portal Pembelajaran Interaktif
+      <div className={`min-h-screen relative flex items-center justify-center p-4 sm:p-6 ${poppins.className} ${isDarkMode ? "bg-zinc-950" : "bg-[#f1f5f9]"}`}>
+        
+        {/* KESAN CAHAYA LATAR BELAKANG (GLOWING ORBS) */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 -left-20 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className={`w-full max-w-6xl relative z-10 overflow-hidden rounded-[30px] md:rounded-[40px] ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-100"} shadow-2xl grid lg:grid-cols-2 border animate-in fade-in zoom-in-95 duration-500`}>
+          
+          {/* BAHAGIAN KIRI / ATAS: HERO SECTION (Sekarang terpapar di mobile!) */}
+          <div className="flex flex-col justify-center bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] p-10 sm:p-12 lg:p-16 text-white relative overflow-hidden text-center lg:text-left">
+            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/30 blur-3xl"></div>
+            <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl"></div>
+            
+            <div className="relative z-10 flex flex-col items-center lg:items-start">
+              {/* Logo Khas Mobile */}
+              <div className="lg:hidden mb-6">
+                <ModernLogo className="h-16 w-16 shadow-lg shadow-blue-500/50" />
               </div>
-              <h1 className="text-5xl lg:text-7xl font-black leading-[1.1] tracking-tight">SISTEM<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">BAHASA</span></h1>
-              <p className="mt-6 max-w-md text-base lg:text-lg leading-relaxed text-slate-300">Platform rujukan Bahasa Melayu moden untuk murid dan guru. Dikuasakan oleh AI.</p>
+              
+              <div className="mb-6 lg:mb-8 inline-flex items-center gap-3 rounded-full bg-white/10 px-5 py-2 text-xs md:text-sm backdrop-blur-md border border-white/10 font-medium tracking-wide shadow-sm">
+                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                Portal Pembelajaran Premium
+              </div>
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.1] tracking-tight">
+                SISTEM<br className="hidden sm:block"/> 
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300"> BAHASA</span>
+              </h1>
+              
+              <p className="mt-4 lg:mt-6 max-w-md text-sm md:text-base lg:text-lg leading-relaxed text-slate-300 font-medium">
+                Platform rujukan Bahasa Melayu moden untuk murid dan guru. Dikuasakan sepenuhnya oleh AI.
+              </p>
             </div>
           </div>
-          <div className="flex items-center justify-center p-8 lg:p-20">
+
+          {/* BAHAGIAN KANAN / BAWAH: BORANG LOGIN */}
+          <div className={`flex items-center justify-center p-8 sm:p-10 lg:p-20 ${isDarkMode ? "bg-zinc-900" : "bg-white"}`}>
             <div className="w-full max-w-md text-center lg:text-left flex flex-col items-center lg:items-start">
-              <div className="mb-10 lg:mb-12 w-full">
-                <div className="lg:hidden mx-auto mb-6 flex justify-center"><ModernLogo className="h-16 w-16" /></div>
-                <h2 className="text-3xl lg:text-5xl font-black tracking-tight text-center lg:text-left">Selamat Datang</h2>
-                <p className={`mt-3 lg:mt-4 leading-relaxed text-base lg:text-lg text-center lg:text-left ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Log masuk menggunakan akaun Google untuk mengakses sistem pembelajaran premium.</p>
+              <div className="mb-8 lg:mb-10 w-full">
+                <h2 className={`text-2xl sm:text-3xl lg:text-5xl font-black tracking-tight ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Log Masuk</h2>
+                <p className={`mt-2 lg:mt-4 leading-relaxed text-sm sm:text-base lg:text-lg font-medium ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Gunakan e-mel yang didaftarkan di OnPay.</p>
               </div>
 
+              {/* PAPARAN RALAT E-MEL */}
               {authError && (
                 <div className="mb-6 w-full p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                  <p className="text-sm font-semibold text-red-700 leading-relaxed">{authError}</p>
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <p className="text-xs sm:text-sm font-bold text-red-700 leading-relaxed text-left">{authError}</p>
                 </div>
               )}
 
+              {/* BUTANG LOGIN GOOGLE */}
               <button 
                 onClick={signInWithGoogle} 
                 disabled={isCheckingAuth}
-                className="group flex w-full items-center justify-center gap-4 rounded-2xl bg-blue-600 px-6 py-4 text-base lg:text-lg font-bold text-white hover:bg-blue-700 disabled:bg-blue-400 transition-all duration-300 shadow-lg"
+                className="group flex w-full items-center justify-center gap-3 sm:gap-4 rounded-2xl bg-blue-600 px-6 py-4 text-sm sm:text-base lg:text-lg font-bold text-white hover:bg-blue-700 disabled:bg-blue-400 transition-all duration-300 shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:shadow-[0_10px_25px_rgba(37,99,235,0.4)] hover:-translate-y-1"
               >
                 {isCheckingAuth ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Menyemak rekod...
+                    Menyemak akses...
                   </>
                 ) : (
                   <>
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-6 w-6 lg:h-7 lg:w-7 bg-white rounded-full p-1 group-hover:scale-110 transition-transform" alt="Google Logo" />
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-6 w-6 sm:h-7 sm:w-7 bg-white rounded-full p-1.5 group-hover:scale-110 transition-transform" alt="Google Logo" />
                     Log Masuk Google
                   </>
                 )}
               </button>
+              
+              <p className={`mt-8 text-[11px] sm:text-xs text-center lg:text-left w-full font-medium ${isDarkMode ? "text-zinc-600" : "text-zinc-400"}`}>
+                Akses sistem ini adalah sulit dan dilindungi.
+              </p>
             </div>
           </div>
+          
         </div>
       </div>
     );

@@ -119,8 +119,8 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   
-  // 🚀 FIX: Tukar Total Pages kepada 112 (108 muka surat isi + 4 roman)
-  const TOTAL_PAGES = 112; 
+  // 🚀 FIX: Tukar Total Pages kepada 108 (108 muka surat isi + 4 roman)
+  const TOTAL_PAGES = 108; 
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);

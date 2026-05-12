@@ -10,18 +10,21 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "900"],
-});
+const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
 const ModernLogo = ({ className = "" }: { className?: string }) => (
   <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-md shadow-blue-500/30 ${className}`}>
-    <svg className="w-[55%] h-[55%] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
+    <svg className="w-[55%] h-[55%] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
   </div>
 );
+
+const getDisplayPage = (actualPage: number) => {
+  if (actualPage === 1) return "i";
+  if (actualPage === 2) return "ii";
+  if (actualPage === 3) return "iii";
+  if (actualPage === 4) return "iv";
+  return (actualPage - 4).toString();
+};
 
 const allPagesIndex = [
   { title: "Cover Depan", page: 1, type: "Pengenalan" },
@@ -90,7 +93,6 @@ const allPagesIndex = [
 ];
 
 export default function Home() {
-  // State Utama
   const [user, setUser] = useState<any>(null);
   const [authError, setAuthError] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
@@ -100,17 +102,17 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const TOTAL_PAGES = 108;
 
-  // Carian
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof allPagesIndex>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-
-  // Bookmark & Sejarah
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [lastRead, setLastRead] = useState<number | null>(null);
   const [pageStats, setPageStats] = useState<Record<number, number>>({});
-
-  // AI Chat
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [aiChatHistory, setAiChatHistory] = useState<{ role: string; text: string }[]>([
@@ -118,8 +120,6 @@ export default function Home() {
   ]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Admin
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
   const [adminPass, setAdminPass] = useState("");
@@ -127,33 +127,64 @@ export default function Home() {
   const [deletedPages, setDeletedPages] = useState<number[]>([]);
   const [adminTab, setAdminTab] = useState<"urus" | "analitik">("urus");
 
-  // Inisialisasi Auth & LocalStorage
+  // PWA Install Logic
+  useEffect(() => {
+    // Check if iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    
+    if (isIosDevice && !isStandalone) {
+      setIsIOS(true);
+      // Popup tunjuk automatik selepas 5 saat kalau dia buka di Safari
+      setTimeout(() => setShowInstallModal(true), 5000);
+    }
+
+    // Capture install prompt for Android/PC
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setTimeout(() => setShowInstallModal(true), 3000);
+    });
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallModal(false);
+      }
+      setDeferredPrompt(null);
+    }
+  };
+
+  // PRELOAD NEXT IMAGES (Trick Speed)
+  useEffect(() => {
+    if (pageNumber < TOTAL_PAGES) {
+      const img1 = new Image(); img1.src = `/pages/SISTEM BAHASA-${pageNumber + 1}.webp`;
+      if (pageNumber + 1 < TOTAL_PAGES) {
+        const img2 = new Image(); img2.src = `/pages/SISTEM BAHASA-${pageNumber + 2}.webp`;
+      }
+    }
+  }, [pageNumber]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setIsCheckingAuth(true);
         setAuthError("");
-        
         try {
-          // URL API APP SCRIPT CIKGU (Dah dimasukkan dengan betul)
           const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSCOZJ-AjJVCBqEmfUPA1LDygqbg7Dg0ylfJMJs7l8qetL6JeRI1NTA8bRl1QOMiDl/exec"; 
-          
           let allowedEmails: string[] = [];
-
           try {
              const response = await fetch(SCRIPT_URL);
              const data = await response.json();
              allowedEmails = data.emails || [];
-          } catch (fetchErr) {
-             console.error("Gagal mendapatkan data dari Google Sheets:", fetchErr);
-          }
+          } catch (fetchErr) { console.error("Gagal mendapatkan data:", fetchErr); }
           
-          // E-mel cikgu/admin (Wajib lepas masuk)
           allowedEmails.push("cikgugrafik@gmail.com", "admin@paan", "jazlantechnology@gmail.com");
-
           const userEmail = currentUser.email?.toLowerCase() || "";
-
-          // SEMAKAN E-MEL KETAT (Strict Allowlist)
           if (allowedEmails.includes(userEmail)) {
             setUser(currentUser);
           } else {
@@ -162,7 +193,6 @@ export default function Home() {
             setAuthError("Akses Ditolak: E-mel ini tiada dalam rekod pembelian. Sila log masuk guna e-mel yang didaftarkan di OnPay.");
           }
         } catch (error) {
-          console.error("Ralat semakan e-mel:", error);
           signOut(auth);
           setUser(null);
           setAuthError("Ralat pelayan. Gagal menyemak rekod pangkalan data. Sila cuba lagi.");
@@ -185,12 +215,10 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // Simpan Stats & Terakhir Dibaca
   useEffect(() => {
     if(!user) return;
     localStorage.setItem("sb_lastRead", pageNumber.toString());
     setLastRead(pageNumber);
-
     setPageStats(prev => {
       const newStats = { ...prev, [pageNumber]: (prev[pageNumber] || 0) + 1 };
       localStorage.setItem("sb_pageStats", JSON.stringify(newStats));
@@ -228,9 +256,7 @@ export default function Home() {
     if (adminPass === "admin@paan") {
       setIsAdminAuth(true);
       localStorage.setItem("isAdminAuth", "true");
-    } else {
-      alert("Kata laluan tidak sah!");
-    }
+    } else { alert("Kata laluan tidak sah!"); }
   };
 
   const handleAdminLogout = () => {
@@ -240,7 +266,7 @@ export default function Home() {
   };
 
   const handleDeletePage = (p: number) => {
-    if(confirm(`Anda pasti mahu memadam muka surat ${p}?`)) {
+    if(confirm(`Anda pasti mahu memadam muka surat ${getDisplayPage(p)}?`)) {
       setDeletedPages(prev => [...prev, p]);
     }
   };
@@ -255,31 +281,24 @@ export default function Home() {
     try {
       const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer sk-aeab062d29744d0588ba1dcb7d0f2aea`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer sk-aeab062d29744d0588ba1dcb7d0f2aea` },
         body: JSON.stringify({
           model: "deepseek-chat",
           messages: [
             {
               role: "system",
-              content: `Anda ialah Pembantu Carian untuk aplikasi "Sistem Bahasa". Tugas anda HANYA memberikan muka surat (ms) yang tepat. Jangan ajar maksud tatabahasa.
-              Jika ejaan salah, perbetulkan dan beritahu muka suratnya.
-              Rujuk senarai indeks KETAT ini:
-              Cover (ms 1), Hak Cipta (ms 2), Isi Kandungan (ms 3, 4)
-              Kata Nama (ms 5), Am (ms 6), Khas (ms 8), Ganti Nama Diri (ms 9), Ganti Nama Tunjuk (ms 10)
-              Kata Kerja (ms 11), Transitif (ms 12), Tak Transitif (ms 14)
-              Kata Adjektif (ms 15), Sifat (ms 17), Perasaan (ms 18), Ukuran (ms 19), Warna (ms 20), Jarak (ms 21), Cara (ms 22), Waktu (ms 23), Bentuk (ms 24), Pancaindera (ms 25)
-              Kata Tugas (ms 26), Hubung (ms 27), Pembenar (ms 30), Nafi (ms 31), Seru (ms 32), Perintah (ms 33), Bantu (ms 34), Bilangan (ms 35), Arah (ms 36), Sendi (ms 37), Pemeri (ms 38), Penguat (ms 39), Adverba (ms 40), Penegas (ms 41), Pangkal (ms 42)
-              Kata Ganda (ms 43), Penuh (ms 45), Separa (ms 46), Berentak (ms 47)
-              Kata Berimbuhan (ms 48), Awalan (ms 50), Akhiran (ms 51), Apitan (ms 52), Sisipan (ms 53)
-              Bina Ayat (ms 54), Jenis (ms 56), Aktif/Pasif (ms 61), Songsang (ms 64), Majmuk (ms 65), Cakap Ajuk/Pindah (ms 66), Penanda Wacana (ms 67)
-              Peribahasa (ms 68), Simpulan Bahasa (ms 70), Perumpamaan (ms 74), Pepatah (ms 81), Bidalan (ms 84), Kiasan (ms 89), Hikmat (ms 92)
-              Penjodoh Bilangan (ms 93)
-              Polisemi (ms 99), Sinonim (ms 104), Antonim (ms 108)
-
-              Contoh jawapan: "Tajuk Kata Ganda Berentak terdapat di muka surat 47."`
+              content: `Anda ialah Pembantu Carian untuk aplikasi "Sistem Bahasa". Tugas anda HANYA memberikan muka surat (ms) yang tepat. Jangan ajar maksud tatabahasa. Rujuk senarai indeks KETAT ini:
+              Cover (ms i), Hak Cipta (ms ii), Isi Kandungan (ms iii, iv)
+              Kata Nama (ms 1), Am (ms 2), Khas (ms 4), Ganti Nama Diri (ms 5), Ganti Nama Tunjuk (ms 6)
+              Kata Kerja (ms 7), Transitif (ms 8), Tak Transitif (ms 10)
+              Kata Adjektif (ms 11), Sifat (ms 13), Perasaan (ms 14), Ukuran (ms 15), Warna (ms 16), Jarak (ms 17), Cara (ms 18), Waktu (ms 19), Bentuk (ms 20), Pancaindera (ms 21)
+              Kata Tugas (ms 22), Hubung (ms 23), Pembenar (ms 26), Nafi (ms 27), Seru (ms 28), Perintah (ms 29), Bantu (ms 30), Bilangan (ms 31), Arah (ms 32), Sendi (ms 33), Pemeri (ms 34), Penguat (ms 35), Adverba (ms 36), Penegas (ms 37), Pangkal (ms 38)
+              Kata Ganda (ms 39), Penuh (ms 41), Separa (ms 42), Berentak (ms 43)
+              Kata Berimbuhan (ms 44), Awalan (ms 46), Akhiran (ms 47), Apitan (ms 48), Sisipan (ms 49)
+              Bina Ayat (ms 50), Jenis (ms 52), Aktif/Pasif (ms 57), Songsang (ms 60), Majmuk (ms 61), Cakap Ajuk/Pindah (ms 62), Penanda Wacana (ms 63)
+              Peribahasa (ms 64), Simpulan Bahasa (ms 66), Perumpamaan (ms 70), Pepatah (ms 77), Bidalan (ms 80), Kiasan (ms 85), Hikmat (ms 88)
+              Penjodoh Bilangan (ms 89)
+              Polisemi (ms 95), Sinonim (ms 100), Antonim (ms 104)`
             },
             { role: "user", content: userQuery },
           ],
@@ -292,20 +311,41 @@ export default function Home() {
       }
     } catch (error) {
       setAiChatHistory((prev) => [...prev, { role: "ai", text: "Maaf, ralat sistem AI." }]);
-    } finally {
-      setIsAiLoading(false);
-    }
+    } finally { setIsAiLoading(false); }
   };
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [aiChatHistory]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [aiChatHistory]);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    try { await signInWithPopup(auth, provider); } 
-    catch (error) { console.log(error); }
+    try { await signInWithPopup(auth, provider); } catch (error) { console.log(error); }
   };
+
+  const getTopPages = () => {
+    return Object.entries(pageStats)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([page, count]) => ({
+        page: parseInt(page), count,
+        title: allPagesIndex.find(p => p.page === parseInt(page))?.title || `M/S ${getDisplayPage(parseInt(page))}`
+      }));
+  };
+
+  const sidebarContents = [
+    { title: "Mukadimah", pages: [1], subTopics: [{ title: "Cover Depan", pages: [1] }, { title: "Nota Hak Cipta", pages: [2] }, { title: "Isi Kandungan", pages: [3, 4] }] },
+    { title: "1. Kata Nama", pages: [5], subTopics: [{ title: "Kata Nama Am", pages: [6, 7] }, { title: "Kata Nama Khas", pages: [8] }, { title: "Kata Ganti Nama Diri", pages: [9] }, { title: "Kata Ganti Nama Diri Tunjuk", pages: [10] }] },
+    { title: "2. Kata Kerja", pages: [11], subTopics: [{ title: "Kata Kerja Transitif", pages: [12, 13] }, { title: "Kata Kerja Tak Transitif", pages: [14] }] },
+    { title: "3. Kata Adjektif", pages: [15, 16], subTopics: [{ title: "Kata Adjektif Sifat", pages: [17] }, { title: "Kata Adjektif Perasaan", pages: [18] }, { title: "Kata Adjektif Ukuran", pages: [19] }, { title: "Kata Adjektif Warna", pages: [20] }, { title: "Kata Adjektif Jarak", pages: [21] }, { title: "Kata Adjektif Cara", pages: [22] }, { title: "Kata Adjektif Waktu", pages: [23] }, { title: "Kata Adjektif Bentuk", pages: [24] }, { title: "Kata Adjektif Pancaindera", pages: [25] }] },
+    { title: "4. Kata Tugas", pages: [26], subTopics: [{ title: "Kata Hubung", pages: [27, 28, 29] }, { title: "Kata Pembenar", pages: [30] }, { title: "Kata Nafi", pages: [31] }, { title: "Kata Seru", pages: [32] }, { title: "Kata Perintah", pages: [33] }, { title: "Kata Bantu", pages: [34] }, { title: "Kata Bilangan", pages: [35] }, { title: "Kata Arah", pages: [36] }, { title: "Kata Sendi Nama", pages: [37] }, { title: "Kata Pemeri", pages: [38] }, { title: "Kata Penguat", pages: [39] }, { title: "Kata Adverba", pages: [40] }, { title: "Kata Penegas", pages: [41] }, { title: "Kata Pangkal Ayat", pages: [42] }] },
+    { title: "5. Kata Ganda", pages: [43, 44], subTopics: [{ title: "Kata Ganda Penuh", pages: [45] }, { title: "Kata Ganda Separa", pages: [46] }, { title: "Kata Ganda Berentak", pages: [47] }] },
+    { title: "6. Kata Berimbuhan", pages: [48, 49], subTopics: [{ title: "Imbuhan Awalan", pages: [50] }, { title: "Imbuhan Akhiran", pages: [51] }, { title: "Imbuhan Apitan", pages: [52] }, { title: "Imbuhan Sisipan", pages: [53] }] },
+    { title: "7. Pembentukan Ayat", pages: [54, 55], subTopics: [{ title: "Jenis Ayat", pages: [56, 57, 58, 59, 60] }, { title: "Ragam Ayat", pages: [61, 62, 63] }, { title: "Susunan Ayat", pages: [64] }, { title: "Ayat Majmuk", pages: [65] }, { title: "Cakap Ajuk/Pindah", pages: [66] }, { title: "Penanda Wacana", pages: [67] }] },
+    { title: "8. Peribahasa", pages: [68, 69], subTopics: [{ title: "Simpulan Bahasa", pages: [70, 71, 72, 73] }, { title: "Perumpamaan", pages: [74, 75, 76, 77, 78, 79, 80] }, { title: "Pepatah", pages: [81, 82, 83] }, { title: "Bidalan", pages: [84, 85, 86, 87, 88] }, { title: "Kiasan", pages: [89, 90, 91] }, { title: "Kata Hikmat", pages: [92] }] },
+    { title: "9. Penjodoh Bilangan", pages: [93, 94, 95, 96, 97, 98], subTopics: [] },
+    { title: "10. Polisemi", pages: [99, 100, 101, 102, 103], subTopics: [] },
+    { title: "11. Sinonim", pages: [104, 105, 106, 107], subTopics: [] },
+    { title: "12. Antonim", pages: [108], subTopics: [] },
+  ];
 
   if (!user) {
     return (
@@ -330,7 +370,6 @@ export default function Home() {
                 <p className={`mt-3 lg:mt-4 leading-relaxed text-base lg:text-lg text-center lg:text-left ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Log masuk menggunakan akaun Google untuk mengakses sistem pembelajaran premium.</p>
               </div>
 
-              {/* PAPARAN RALAT E-MEL */}
               {authError && (
                 <div className="mb-6 w-full p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                   <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -338,7 +377,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* BUTANG LOGIN */}
               <button 
                 onClick={signInWithGoogle} 
                 disabled={isCheckingAuth}
@@ -363,36 +401,36 @@ export default function Home() {
     );
   }
 
-  const sidebarContents = [
-    { title: "Mukadimah", pages: [1], subTopics: [{ title: "Cover Depan", pages: [1] }, { title: "Nota Hak Cipta", pages: [2] }, { title: "Isi Kandungan", pages: [3, 4] }] },
-    { title: "1. Kata Nama", pages: [5], subTopics: [{ title: "Kata Nama Am", pages: [6, 7] }, { title: "Kata Nama Khas", pages: [8] }, { title: "Kata Ganti Nama Diri", pages: [9] }, { title: "Kata Ganti Nama Diri Tunjuk", pages: [10] }] },
-    { title: "2. Kata Kerja", pages: [11], subTopics: [{ title: "Kata Kerja Transitif", pages: [12, 13] }, { title: "Kata Kerja Tak Transitif", pages: [14] }] },
-    { title: "3. Kata Adjektif", pages: [15, 16], subTopics: [{ title: "Kata Adjektif Sifat", pages: [17] }, { title: "Kata Adjektif Perasaan", pages: [18] }, { title: "Kata Adjektif Ukuran", pages: [19] }, { title: "Kata Adjektif Warna", pages: [20] }, { title: "Kata Adjektif Jarak", pages: [21] }, { title: "Kata Adjektif Cara", pages: [22] }, { title: "Kata Adjektif Waktu", pages: [23] }, { title: "Kata Adjektif Bentuk", pages: [24] }, { title: "Kata Adjektif Pancaindera", pages: [25] }] },
-    { title: "4. Kata Tugas", pages: [26], subTopics: [{ title: "Kata Hubung", pages: [27, 28, 29] }, { title: "Kata Pembenar", pages: [30] }, { title: "Kata Nafi", pages: [31] }, { title: "Kata Seru", pages: [32] }, { title: "Kata Perintah", pages: [33] }, { title: "Kata Bantu", pages: [34] }, { title: "Kata Bilangan", pages: [35] }, { title: "Kata Arah", pages: [36] }, { title: "Kata Sendi Nama", pages: [37] }, { title: "Kata Pemeri", pages: [38] }, { title: "Kata Penguat", pages: [39] }, { title: "Kata Adverba", pages: [40] }, { title: "Kata Penegas", pages: [41] }, { title: "Kata Pangkal Ayat", pages: [42] }] },
-    { title: "5. Kata Ganda", pages: [43, 44], subTopics: [{ title: "Kata Ganda Penuh", pages: [45] }, { title: "Kata Ganda Separa", pages: [46] }, { title: "Kata Ganda Berentak", pages: [47] }] },
-    { title: "6. Kata Berimbuhan", pages: [48, 49], subTopics: [{ title: "Imbuhan Awalan", pages: [50] }, { title: "Imbuhan Akhiran", pages: [51] }, { title: "Imbuhan Apitan", pages: [52] }, { title: "Imbuhan Sisipan", pages: [53] }] },
-    { title: "7. Pembentukan Ayat", pages: [54, 55], subTopics: [{ title: "Jenis Ayat", pages: [56, 57, 58, 59, 60] }, { title: "Ragam Ayat", pages: [61, 62, 63] }, { title: "Susunan Ayat", pages: [64] }, { title: "Ayat Majmuk", pages: [65] }, { title: "Cakap Ajuk/Pindah", pages: [66] }, { title: "Penanda Wacana", pages: [67] }] },
-    { title: "8. Peribahasa", pages: [68, 69], subTopics: [{ title: "Simpulan Bahasa", pages: [70, 71, 72, 73] }, { title: "Perumpamaan", pages: [74, 75, 76, 77, 78, 79, 80] }, { title: "Pepatah", pages: [81, 82, 83] }, { title: "Bidalan", pages: [84, 85, 86, 87, 88] }, { title: "Kiasan", pages: [89, 90, 91] }, { title: "Kata Hikmat", pages: [92] }] },
-    { title: "9. Penjodoh Bilangan", pages: [93, 94, 95, 96, 97, 98], subTopics: [] },
-    { title: "10. Polisemi", pages: [99, 100, 101, 102, 103], subTopics: [] },
-    { title: "11. Sinonim", pages: [104, 105, 106, 107], subTopics: [] },
-    { title: "12. Antonim", pages: [108], subTopics: [] },
-  ];
-
-  const getTopPages = () => {
-    return Object.entries(pageStats)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([page, count]) => ({
-        page: parseInt(page),
-        count,
-        title: allPagesIndex.find(p => p.page === parseInt(page))?.title || `M/S ${page}`
-      }));
-  };
-
   return (
     <div className={`h-[100dvh] overflow-hidden ${isDarkMode ? "bg-zinc-950 text-white dark" : "bg-[#f8fafc] text-zinc-800"} ${poppins.className} flex flex-col relative transition-colors duration-300`}>
       
+      {/* --- POPUP INSTALL PWA --- */}
+      {showInstallModal && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className={`w-full max-w-sm rounded-[30px] p-6 md:p-8 text-center shadow-2xl ${isDarkMode ? "bg-zinc-900 border border-zinc-800" : "bg-white"}`}>
+            <div className="mx-auto w-20 h-20 bg-blue-600 rounded-2xl shadow-lg flex items-center justify-center mb-6 transform -rotate-3">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            </div>
+            <h2 className={`text-2xl font-black tracking-tight mb-2 ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Install Sistem Bahasa</h2>
+            <p className={`text-sm mb-8 leading-relaxed ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>Akses nota lebih laju, baca tanpa internet (offline) dan jimat data dengan pasang aplikasi ini di skrin anda.</p>
+            
+            {isIOS ? (
+               <div className={`p-4 rounded-2xl text-left border mb-4 ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-blue-50 border-blue-100"}`}>
+                 <p className={`text-xs font-bold ${isDarkMode ? "text-zinc-300" : "text-blue-800"}`}>Untuk Pengguna iPhone/iPad:</p>
+                 <ol className={`text-xs mt-2 ml-4 list-decimal ${isDarkMode ? "text-zinc-400" : "text-blue-700"}`}>
+                   <li>Tekan ikon <strong>Share</strong> (petak berserta anak panah) di bawah browser Safari.</li>
+                   <li className="mt-1">Pilih <strong>"Add to Home Screen"</strong>.</li>
+                 </ol>
+               </div>
+            ) : (
+               <button onClick={handleInstallApp} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all mb-3">Install Sekarang</button>
+            )}
+            
+            <button onClick={() => setShowInstallModal(false)} className={`text-sm font-bold underline ${isDarkMode ? "text-zinc-500 hover:text-white" : "text-zinc-400 hover:text-zinc-800"}`}>Lain kali</button>
+          </div>
+        </div>
+      )}
+
       {/* NAVBAR */}
       <div className={`z-40 border-b flex-shrink-0 backdrop-blur-xl shadow-sm ${isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white/90 border-zinc-200"}`}>
         <div className="flex flex-col md:flex-row items-center gap-4 px-4 md:px-6 py-3 md:py-4">
@@ -436,7 +474,7 @@ export default function Home() {
               {lastRead !== null && lastRead !== pageNumber && (
                 <button onClick={() => setPageNumber(lastRead)} className={`hidden md:flex items-center gap-2 px-4 rounded-full font-bold text-sm border shadow-sm transition-all whitespace-nowrap ${isDarkMode ? "bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-blue-400" : "bg-white border-zinc-200 hover:bg-zinc-50 text-blue-600"}`}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                  Sambung M/S {lastRead}
+                  Sambung ms {getDisplayPage(lastRead)}
                 </button>
               )}
 
@@ -450,7 +488,7 @@ export default function Home() {
                           <p className={`text-[11px] font-medium mt-0.5 ${isDarkMode ? "text-zinc-400" : "text-zinc-400"}`}>{item.type}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${isDarkMode ? "bg-zinc-900 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}>ms {item.page}</span>
+                          <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${isDarkMode ? "bg-zinc-900 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}>ms {getDisplayPage(item.page)}</span>
                         </div>
                       </button>
                     ))
@@ -477,7 +515,7 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden relative">
         {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />}
 
-        {/* SIDEBAR SCROLL BEBAS */}
+        {/* SIDEBAR */}
         <div className={`absolute md:relative z-40 h-full w-[280px] md:w-[320px] border-r flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 shadow-2xl md:shadow-none"} ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
           <div className={`flex items-center justify-between p-5 border-b ${isDarkMode ? "border-zinc-800" : "border-zinc-100"}`}>
             <h2 className={`text-lg font-black uppercase tracking-wide ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Kandungan</h2>
@@ -502,16 +540,12 @@ export default function Home() {
                 <div className="flex flex-wrap gap-2">
                   {bookmarks.map(b => (
                     <button key={b} onClick={() => { setPageNumber(b); setIsSidebarOpen(false); }} className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${pageNumber === b ? "bg-yellow-400 text-yellow-900" : isDarkMode ? "bg-zinc-800 text-yellow-500 hover:bg-zinc-700" : "bg-white text-yellow-600 hover:bg-yellow-100"}`}>
-                      M/S {b}
+                      M/S {getDisplayPage(b)}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-
-            <div className="mb-4">
-              <p className={`text-[11px] p-3 rounded-xl border ${isDarkMode ? "bg-blue-900/20 border-blue-800/50 text-blue-300" : "bg-blue-50 border-blue-100 text-blue-600 font-medium"}`}>Nota: Klik pada butang nombor page untuk akses pantas.</p>
-            </div>
 
             {sidebarContents.map((item, index) => {
               const isMainActive = item.pages.includes(pageNumber);
@@ -523,7 +557,7 @@ export default function Home() {
                       <div className="flex flex-wrap gap-1.5 justify-end">
                         {item.pages.filter(p => !deletedPages.includes(p)).map(p => (
                           <button key={p} onClick={() => { setPageNumber(p); setIsSidebarOpen(false); }} className={`min-w-[36px] py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-colors ${pageNumber === p ? (isMainActive ? "bg-white text-blue-600" : "bg-blue-500 text-white") : (isMainActive ? "bg-blue-500 text-blue-100 hover:bg-blue-400" : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-200 text-zinc-500 hover:bg-zinc-300")}`}>
-                            {p}
+                            {getDisplayPage(p)}
                           </button>
                         ))}
                       </div>
@@ -544,7 +578,7 @@ export default function Home() {
                               <div className="flex flex-wrap gap-1.5 justify-end">
                                 {sub.pages.filter(p => !deletedPages.includes(p)).map(p => (
                                   <button key={p} onClick={() => { setPageNumber(p); setIsSidebarOpen(false); }} className={`min-w-[36px] py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-colors ${pageNumber === p ? "bg-blue-500 text-white shadow-sm" : isDarkMode ? "bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300" : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"}`}>
-                                    {p}
+                                    {getDisplayPage(p)}
                                   </button>
                                 ))}
                               </div>
@@ -569,7 +603,7 @@ export default function Home() {
           {lastRead !== null && lastRead !== pageNumber && (
             <button onClick={() => setPageNumber(lastRead)} className={`md:hidden mb-4 flex w-full items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border shadow-sm transition-all ${isDarkMode ? "bg-zinc-800 border-zinc-700 text-blue-400" : "bg-white border-blue-100 text-blue-600"}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-              Sambung Membaca M/S {lastRead}
+              Sambung ms {getDisplayPage(lastRead)}
             </button>
           )}
 
@@ -577,7 +611,7 @@ export default function Home() {
              <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <svg className={`w-20 h-20 mb-4 ${isDarkMode ? "text-zinc-800" : "text-zinc-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 <h3 className={`text-2xl font-black ${isDarkMode ? "text-zinc-600" : "text-zinc-400"}`}>Muka Surat Dipadam</h3>
-                <p className={`mt-2 ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {pageNumber} tidak lagi tersedia dalam sistem.</p>
+                <p className={`mt-2 ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {getDisplayPage(pageNumber)} tidak lagi tersedia dalam sistem.</p>
                 <button onClick={() => setPageNumber(p => p < TOTAL_PAGES ? p + 1 : p)} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold">Pergi Muka Surat Seterusnya</button>
              </div>
           ) : (
@@ -586,7 +620,7 @@ export default function Home() {
                 <div className="flex items-center gap-4">
                   <div>
                     <h2 className={`text-xl md:text-2xl font-black tracking-tight ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Nota Interaktif</h2>
-                    <p className={`mt-0.5 text-xs md:text-sm font-medium ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {pageNumber} daripada {TOTAL_PAGES}</p>
+                    <p className={`mt-0.5 text-xs md:text-sm font-medium ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>Muka surat {getDisplayPage(pageNumber)}</p>
                   </div>
                   <button onClick={toggleBookmark} className={`p-2 rounded-full transition-all ${bookmarks.includes(pageNumber) ? "bg-yellow-100 text-yellow-500 hover:bg-yellow-200" : isDarkMode ? "bg-zinc-800 text-zinc-500 hover:text-yellow-500" : "bg-zinc-50 text-zinc-300 hover:text-yellow-500"}`}>
                     <svg className="w-7 h-7" fill={bookmarks.includes(pageNumber) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
@@ -604,7 +638,7 @@ export default function Home() {
                 <div className={`w-full overflow-x-auto rounded-2xl border shadow-xl custom-scrollbar flex justify-center mb-6 relative group ${isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}>
                   <img
                     src={`/pages/SISTEM BAHASA-${pageNumber}.webp`}
-                    alt={`Muka Surat ${pageNumber}`}
+                    alt={`Muka Surat ${getDisplayPage(pageNumber)}`}
                     style={{ width: `${100 * zoom}%`, minWidth: `${300 * zoom}px`, maxWidth: `${850 * zoom}px`, transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)", filter: isDarkMode ? "brightness(0.9) contrast(1.1)" : "none" }}
                     className="h-auto block origin-top"
                   />
@@ -615,7 +649,7 @@ export default function Home() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg> Sebelumnya
                   </button>
                   <div className={`text-xs md:text-sm font-semibold ${isDarkMode ? "text-zinc-500" : "text-zinc-500"}`}>
-                    Halaman <span className={`px-2 py-1 rounded-md ml-1 ${isDarkMode ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-900"}`}>{pageNumber}</span> / {TOTAL_PAGES}
+                    Halaman <span className={`px-2 py-1 rounded-md ml-1 ${isDarkMode ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-900"}`}>{getDisplayPage(pageNumber)}</span> 
                   </div>
                   <button onClick={() => setPageNumber(p => p < TOTAL_PAGES ? p + 1 : p)} disabled={pageNumber === TOTAL_PAGES} className="flex items-center gap-1 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-xl bg-blue-600 text-white font-bold text-xs md:text-sm hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-500/20">
                     Seterusnya <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
@@ -764,11 +798,11 @@ export default function Home() {
                           </div>
 
                           <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-white border-zinc-200"}`}>
-                            <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Padam Muka Surat Semasa (M/S {pageNumber})</h4>
+                            <h4 className={`font-bold mb-1 ${isDarkMode ? "text-white" : "text-zinc-800"}`}>Padam Muka Surat Semasa (M/S {getDisplayPage(pageNumber)})</h4>
                             <div className="flex gap-3 mt-4">
                               <button onClick={() => handleDeletePage(pageNumber)} className={`flex-1 py-3 rounded-xl border text-sm font-bold flex justify-center items-center gap-2 transition ${isDarkMode ? "bg-red-900/20 border-red-800/50 text-red-400 hover:bg-red-900/40" : "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"}`}>
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                Padam M/S {pageNumber}
+                                Padam M/S {getDisplayPage(pageNumber)}
                               </button>
                             </div>
                           </div>
@@ -781,7 +815,7 @@ export default function Home() {
                               </h4>
                               <div className="flex flex-wrap gap-2 mt-2">
                                 {deletedPages.map(p => (
-                                  <span key={p} className={`px-2 py-1 rounded text-xs font-bold ${isDarkMode ? "bg-yellow-900/50 text-yellow-200" : "bg-yellow-200 text-yellow-800"}`}>M/S {p}</span>
+                                  <span key={p} className={`px-2 py-1 rounded text-xs font-bold ${isDarkMode ? "bg-yellow-900/50 text-yellow-200" : "bg-yellow-200 text-yellow-800"}`}>M/S {getDisplayPage(p)}</span>
                                 ))}
                               </div>
                               <button onClick={() => setDeletedPages([])} className={`mt-3 text-xs font-bold underline ${isDarkMode ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}>Restore Semua</button>
@@ -815,7 +849,7 @@ export default function Home() {
                                         </div>
                                         <div>
                                           <p className={`text-sm font-bold ${isDarkMode ? "text-zinc-200" : "text-zinc-800"}`}>{stat.title}</p>
-                                          <p className={`text-[10px] ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>M/S {stat.page}</p>
+                                          <p className={`text-[10px] ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>M/S {getDisplayPage(stat.page)}</p>
                                         </div>
                                       </div>
                                       <div className={`text-sm font-bold px-3 py-1 rounded-full ${isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600"}`}>
